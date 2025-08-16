@@ -118,3 +118,25 @@ Global data operations are available from the main header for the entire SQLite 
 -   **Local Storage**: Browser **SQLite database** (via `sql.js`/WASM). The database state is persisted in the browser's **IndexedDB** between sessions, providing robust, persistent storage.
 -   **Frontend Stack**: React, TypeScript, Tailwind CSS.
 -   **Libraries**: `sql.js` (SQLite WASM), PDF.js and Mammoth.js (file content extraction).
+
+
+<div align="center">
+<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+</div>
+
+# Run and deploy your AI Studio app
+
+This contains everything you need to run your app locally.
+
+View your app in AI Studio: https://ai.studio/apps/drive/1b4li4Zji0lUbNC_q_f5WkkOWKxBOihg-
+
+## Run Locally
+
+**Prerequisites:**  Node.js
+
+
+1. Install dependencies:
+   `npm install`
+2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
+3. Run the app:
+   `npm run dev`
