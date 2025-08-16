@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { LoaderIcon, SparklesIcon, ArrowUpTrayIcon, DocumentTextIcon, XMarkIcon, PhotoIcon, BriefcaseIcon, TrashIcon } from './Icons';
+import { LoaderIcon, SparklesIcon, ArrowUpTrayIcon, DocumentTextIcon, XMarkIcon, PhotoIcon, BriefcaseIcon, TrashIcon, ChevronDownIcon } from './Icons';
 import { ResumeData, Job } from '../types';
 
 interface ResumeInputFormProps {
@@ -218,19 +218,24 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
                 1. Select or Create a Job
             </h3>
             <div className="flex items-center gap-2">
-                <select
-                    id="job-selection"
-                    value={isCreatingJob ? 'new' : selectedJobId ?? ''}
-                    onChange={handleJobSelectionChange}
-                    disabled={anyLoading}
-                    className="block w-full rounded-md border-0 bg-base-100 py-2 px-3 text-content-100 shadow-sm ring-1 ring-inset ring-base-300 placeholder:text-content-200/50 focus:ring-2 focus:ring-inset focus:ring-brand-primary sm:text-sm sm:leading-6 transition-all"
-                >
-                    <option value="" disabled>-- Select a Job --</option>
-                    {jobs.map(job => (
-                        <option key={job.id} value={job.id}>{job.title}</option>
-                    ))}
-                    <option value="new" className="font-bold text-brand-primary">[+] Create a New Job</option>
-                </select>
+                <div className="relative w-full">
+                    <select
+                        id="job-selection"
+                        value={isCreatingJob ? 'new' : selectedJobId ?? ''}
+                        onChange={handleJobSelectionChange}
+                        disabled={anyLoading}
+                        className="appearance-none block w-full rounded-md border-0 bg-base-100 py-2 pl-3 pr-10 text-content-100 shadow-sm ring-1 ring-inset ring-base-300 placeholder:text-content-200/50 focus:ring-2 focus:ring-inset focus:ring-brand-primary sm:text-sm sm:leading-6 transition-all"
+                    >
+                        <option value="" disabled>-- Select a Job --</option>
+                        {jobs.map(job => (
+                            <option key={job.id} value={job.id}>{job.title}</option>
+                        ))}
+                        <option value="new" className="font-bold text-brand-primary">[+] Create a New Job</option>
+                    </select>
+                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-content-200">
+                        <ChevronDownIcon className="h-5 w-5" aria-hidden="true" />
+                    </div>
+                </div>
                 {!isCreatingJob && selectedJobId && (
                     <button 
                         type="button" 

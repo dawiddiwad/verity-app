@@ -1,10 +1,10 @@
-# AI Resume Analyzer: Application Specification
+# Verity App: Application Specification
 
 ## 1. High-Level Overview
 
-The **AI Resume Analyzer** is a web application designed to help job seekers and hiring professionals evaluate how well a resume matches a specific job description.
+The **Verity App** is a web application designed to help job seekers and hiring professionals evaluate how well a resume matches a specific job description, acting as an **AI Resume Analyzer**.
 
-The core workflow is job-centric. Users first create and save distinct "Jobs," each with a title and description. They can then select a job and analyze multiple resumes against it. The application uses the Google Gemini AI model to perform a detailed analysis, providing a match score, a summary, keyword comparisons, and actionable suggestions. All jobs and their associated analysis results are stored locally in a user-managed SQLite database file.
+The core workflow is job-centric. Users first create and save distinct "Jobs," each with a title and description. They can then select a job and analyze multiple resumes against it. The application uses the Google Gemini AI model to perform a detailed analysis, providing a match score, a summary, and keyword comparisons. All jobs and their associated analysis results are stored locally in a user-managed SQLite database file.
 
 ---
 
@@ -12,7 +12,7 @@ The core workflow is job-centric. Users first create and save distinct "Jobs," e
 
 The application is a single-page interface with a clean, modern, dark-themed design.
 
--   **Header**: A sticky header displaying the application title ("AI Resume Analyzer") and buttons for importing and exporting the entire database.
+-   **Header**: A sticky header displaying the application title ("Verity App") and buttons for importing and exporting the entire database.
 -   **Main Content Area**: The central part of the application, containing two primary sections:
     1.  **Input Form**: For creating, selecting, and managing jobs, and for uploading resumes.
     2.  **Results Area**: Displays either the **Analysis History Table** (filtered by the selected job) or the **Detailed Analysis View** for a single result.
@@ -86,10 +86,9 @@ This view provides the complete, in-depth analysis for a single result.
 -   **Content Cards**:
     -   **Overall Match Score**: Donut chart and full AI summary.
     -   **Analyzed Against**: Shows the full text of the job description used for the analysis.
-    -   **Original Resume**: Displays the resume content (text or image).
+    -   **Original Resume**: A collapsible section, folded by default, that displays a preview of the resume content (text or image).
     -   **Strengths** & **Areas for Improvement**: Bulleted lists.
     -   **Keyword Analysis**: Matching and missing keywords.
-    -   **Tailored Suggestions**: Actionable advice paragraph.
 
 ### 3.5. Data Management (Import, Export)
 

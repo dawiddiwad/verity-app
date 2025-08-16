@@ -1,5 +1,5 @@
 {
-  "name": "AI Resume Analyzer",
-  "description": "An intelligent application that analyzes your resume against a job description, providing a match score, keyword analysis, and tailored suggestions for improvement.",
+  "name": "Verity App",
+  "description": "AI Resume Analyzer",
   "requestFramePermissions": []
 }

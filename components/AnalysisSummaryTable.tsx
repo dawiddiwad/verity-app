@@ -35,7 +35,7 @@ const AnalysisSummaryTable: React.FC<AnalysisSummaryTableProps> = ({ results, jo
     return (
         <div className="text-center py-16 px-6 bg-base-200 rounded-lg animate-fade-in border border-dashed border-base-300">
             <BriefcaseIcon className="mx-auto h-12 w-12 text-brand-secondary" />
-            <h2 className="mt-4 text-2xl font-semibold text-content-100">Welcome to the AI Resume Analyzer</h2>
+            <h2 className="mt-4 text-2xl font-semibold text-content-100">Welcome to Verity App</h2>
             <p className="mt-2 text-md text-content-200">
                 Your database is ready. To get started, create your first job description above.
             </p>

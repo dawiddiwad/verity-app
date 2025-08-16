@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { StoredAnalysis } from '../types';
 import AnalysisCard from './AnalysisCard';
 import KeywordPill from './KeywordPill';
@@ -13,6 +13,9 @@ interface AnalysisDisplayProps {
 }
 
 const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result }) => {
+  const [isPreviewExpanded, setIsPreviewExpanded] = useState(false);
+  const [isJobDescExpanded, setIsJobDescExpanded] = useState(false);
+
   if ('error' in result.analysis) {
      return <ErrorMessage message={`Analysis failed for ${result.fileName}: ${result.analysis.error}`} />;
   }
@@ -47,38 +50,82 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result }) => {
             </div>
         </div>
       </AnalysisCard>
-
-      <AnalysisCard title={`Analyzed Against: ${result.jobTitle}`} icon={<BriefcaseIcon />}>
-        <div className="bg-base-100 p-4 rounded-lg max-h-60 overflow-y-auto">
-          <p className="text-sm text-content-200 leading-relaxed whitespace-pre-wrap selection:bg-brand-primary/20">
-            {result.jobDescription}
-          </p>
-        </div>
-      </AnalysisCard>
       
-      <AnalysisCard title="Original Resume" icon={<DocumentTextIcon />}>
-        <div className="flex justify-end mb-4 border-b border-base-100 pb-4">
-            {result.resumeData.fileBlob && (
-                <button 
-                    onClick={handleDownload}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-content-100 bg-base-300/70 border border-base-300 rounded-md hover:bg-base-300"
-                    title={`Download ${result.fileName}`}
-                >
-                    <ArrowDownTrayIcon className="h-4 w-4" /> Download Original
-                </button>
-            )}
+      <div className="bg-base-200 rounded-lg shadow-lg overflow-hidden">
+        <div
+            className={`p-5 flex justify-between items-center cursor-pointer hover:bg-base-300/20 transition-colors ${isJobDescExpanded ? 'border-b border-base-300' : ''}`}
+            onClick={() => setIsJobDescExpanded(!isJobDescExpanded)}
+            aria-expanded={isJobDescExpanded}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsJobDescExpanded(!isJobDescExpanded)}}
+        >
+            <h2 className="text-xl font-semibold text-content-100 flex items-center gap-3">
+                <span className="h-6 w-6"><BriefcaseIcon/></span>
+                Analyzed Against: {result.jobTitle}
+            </h2>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-5 h-5 transition-transform duration-200 ${isJobDescExpanded ? 'rotate-180' : ''}`}>
+                <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 011.06 0L10 11.94l3.72-3.72a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.22 9.28a.75.75 0 010-1.06z" clipRule="evenodd" />
+            </svg>
         </div>
-        {result.resumeData.fileBlob && result.resumeData.fileMimeType ? (
-            <FilePreview
-                fileBlob={result.resumeData.fileBlob}
-                fileMimeType={result.resumeData.fileMimeType}
-            />
-        ) : (
-            <div className="bg-base-100 p-6 rounded-lg">
-                <p className="text-content-200">No original file data available to display a preview.</p>
+        {isJobDescExpanded && (
+            <div className="p-5">
+                <div className="bg-base-100 p-4 rounded-lg max-h-60 overflow-y-auto">
+                <p className="text-sm text-content-200 leading-relaxed whitespace-pre-wrap selection:bg-brand-primary/20">
+                    {result.jobDescription}
+                </p>
+                </div>
             </div>
         )}
-      </AnalysisCard>
+      </div>
+      
+      <div className="bg-base-200 rounded-lg shadow-lg overflow-hidden">
+        <div
+            className={`p-5 flex justify-between items-center cursor-pointer hover:bg-base-300/20 transition-colors ${isPreviewExpanded ? 'border-b border-base-300' : ''}`}
+            onClick={() => setIsPreviewExpanded(!isPreviewExpanded)}
+            aria-expanded={isPreviewExpanded}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsPreviewExpanded(!isPreviewExpanded)}}
+        >
+            <h2 className="text-xl font-semibold text-content-100 flex items-center gap-3">
+                <span className="h-6 w-6"><DocumentTextIcon/></span>
+                Original Resume
+            </h2>
+            <div className="flex items-center gap-4">
+                {result.resumeData.fileBlob && (
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation(); // prevent collapsing when clicking download
+                            handleDownload();
+                        }}
+                        className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-content-100 bg-base-300/70 border border-base-300 rounded-md hover:bg-base-300 z-10"
+                        title={`Download ${result.fileName}`}
+                    >
+                        <ArrowDownTrayIcon className="h-4 w-4" /> Download
+                    </button>
+                )}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={`w-5 h-5 transition-transform duration-200 ${isPreviewExpanded ? 'rotate-180' : ''}`}>
+                    <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 011.06 0L10 11.94l3.72-3.72a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.22 9.28a.75.75 0 010-1.06z" clipRule="evenodd" />
+                </svg>
+            </div>
+        </div>
+        {isPreviewExpanded && (
+            <div className="p-5">
+                {result.resumeData.fileBlob && result.resumeData.fileMimeType ? (
+                    <FilePreview
+                        fileBlob={result.resumeData.fileBlob}
+                        fileMimeType={result.resumeData.fileMimeType}
+                    />
+                ) : (
+                    <div className="bg-base-100 p-6 rounded-lg">
+                        <p className="text-content-200">No original file data available to display a preview.</p>
+                    </div>
+                )}
+            </div>
+        )}
+      </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <AnalysisCard title="Strengths" icon={<CheckCircleIcon className="text-green-400" />}>
@@ -120,10 +167,6 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result }) => {
             </div>
           </div>
         </div>
-      </AnalysisCard>
-
-      <AnalysisCard title="Tailored Suggestions" icon={<SparklesIcon />}>
-          <p className="text-content-100 whitespace-pre-wrap leading-relaxed">{analysis.tailoredSuggestions}</p>
       </AnalysisCard>
 
     </div>

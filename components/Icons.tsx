@@ -93,3 +93,9 @@ export const BriefcaseIcon: React.FC<IconProps> = ({ className }) => (
         <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 14.15v4.075c0 1.313-.964 2.4-2.175 2.4H5.925c-1.211 0-2.175-1.087-2.175-2.4V14.15M12 12.375v5.25M15.75 12.375v3.375M8.25 12.375v3.375M21.75 9.375a2.4 2.4 0 00-2.4-2.4H4.65a2.4 2.4 0 00-2.4 2.4v2.25c0 1.313.964 2.4 2.175 2.4h14.45c1.211 0 2.175-1.087 2.175-2.4V9.375z" />
     </svg>
 );
+
+export const ChevronDownIcon: React.FC<IconProps> = ({ className }) => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className={className}>
+        <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 011.06 0L10 11.94l3.72-3.72a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.22 9.28a.75.75 0 010-1.06z" clipRule="evenodd" />
+    </svg>
+);

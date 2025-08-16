@@ -30,7 +30,7 @@ const Header: React.FC<HeaderProps> = ({ onImport, onExport, isExportDisabled, i
             <div className="flex items-center space-x-3">
             <DocumentTextIcon className="h-8 w-8 text-brand-primary" />
             <h1 className="text-2xl font-bold tracking-tight text-content-100">
-                AI Resume Analyzer
+                Verity App
             </h1>
             </div>
             <div className="flex items-center gap-2">

@@ -48,13 +48,9 @@ const responseSchema = {
         },
       },
       required: ["matchingKeywords", "missingKeywords"]
-    },
-    tailoredSuggestions: {
-      type: Type.STRING,
-      description: "A paragraph of specific, actionable advice on how to tailor the resume for this job application. Example: 'Rephrase the bullet point about Project X to highlight...'."
     }
   },
-  required: ['candidateName', 'matchScore', 'summary', 'strengths', 'areasForImprovement', 'keywordAnalysis', 'tailoredSuggestions']
+  required: ['candidateName', 'matchScore', 'summary', 'strengths', 'areasForImprovement', 'keywordAnalysis']
 };
 
 export const analyzeResume = async (resumeData: ResumeData, jobDesc: string): Promise<AnalysisResult> => {

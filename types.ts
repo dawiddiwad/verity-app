@@ -28,7 +28,6 @@ export interface AnalysisResult {
   strengths: string[];
   areasForImprovement: string[];
   keywordAnalysis: KeywordAnalysis;
-  tailoredSuggestions: string;
 }
 
 export type AnalysisResultWithError = AnalysisResult | { error: string };
