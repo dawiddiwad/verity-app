@@ -120,6 +120,7 @@ Global data operations are available from the main header for the entire SQLite 
 -   **Libraries**: `sql.js` (SQLite WASM), PDF.js and Mammoth.js (file content extraction).
 
 
+###
 <div align="center">
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
@@ -128,12 +129,9 @@ Global data operations are available from the main header for the entire SQLite 
 
 This contains everything you need to run your app locally.
 
-View your app in AI Studio: https://ai.studio/apps/drive/1b4li4Zji0lUbNC_q_f5WkkOWKxBOihg-
-
 ## Run Locally
 
 **Prerequisites:**  Node.js
-
 
 1. Install dependencies:
    `npm install`
