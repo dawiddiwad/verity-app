@@ -6,19 +6,6 @@ Verity is a powerful, locally-run web application that leverages the Google Gemi
 
 ---
 
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-1. Install dependencies:
-   `npm install`
-2. Run the app (dev):
-   `npm run dev`
-3. Run the app (production preview)
-   `npm run build` and then `npm run preview`
-
----
-
 ## Application Specification
 
 ### 1. High-Level Overview
@@ -117,3 +104,16 @@ This view provides the complete, in-depth analysis for a single result.
 -   **Local Storage**: Browser **SQLite database** (via `sql.js`/WASM). The database state is persisted in the browser's **IndexedDB** between sessions, providing robust, persistent storage. All user data remains on the client-side.
 -   **Frontend Stack**: React, TypeScript, Tailwind CSS.
 -   **Libraries**: `sql.js` (SQLite WASM), `pdfjs-dist` (PDF text extraction/preview), `mammoth.js` (DOCX content extraction/preview).
+
+---
+
+## Run Locally
+
+**Prerequisites:**  Node.js
+
+1. Install dependencies:
+   `npm install`
+2. Run the app (dev):
+   `npm run dev`
+3. Run the app (production preview)
+   `npm run build` and then `npm run preview`
