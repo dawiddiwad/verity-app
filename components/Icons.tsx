@@ -13,9 +13,9 @@ export const VerityLogo: React.FC<IconProps> = ({ className }) => (
 
 
 export const LoaderIcon: React.FC<IconProps> = ({ className }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
-    <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0011.664 0l3.181-3.183m-11.664 0l4.992-4.993m-4.993 0l-3.181 3.183a8.25 8.25 0 000 11.664l3.181 3.183" />
-  </svg>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+    </svg>
 );
 
 export const SparklesIcon: React.FC<IconProps> = ({ className }) => (
@@ -38,7 +38,7 @@ export const XCircleIcon: React.FC<IconProps> = ({ className }) => (
 
 export const LightBulbIcon: React.FC<IconProps> = ({ className }) => (
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className={className}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.311a7.5 7.5 0 01-7.5 0c-1.42 0-2.798-.48-3.954-1.302a7.5 7.5 0 01-7.461-10.289 7.5 7.5 0 0113.17-5.043A7.5 7.5 0 0118.75 12a7.5 7.5 0 01-2.25 5.302m-13.5-5.302a7.5 7.5 0 003.626 6.352" />
+        <path strokeLinecap="round" strokeLinejoin="round" d="M9 18h6M10 21h4M12 3a6 6 0 00-6 6c0 2.21 1.2 4.157 3 5.187V18h6v-3.813c1.8-1.03 3-2.978 3-5.187a6 6 0 00-6-6z" />
     </svg>
 );
 

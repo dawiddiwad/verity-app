@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { StoredAnalysis, ResumeData, AnalysisResultWithError, Job } from './types';
 import { analyzeResume } from './services/geminiService';
@@ -367,6 +368,9 @@ const App: React.FC = () => {
             onAnalyze={triggerAnalysis}
             isLoading={anyLoading}
             setError={setError}
+            apiKey={apiKey}
+            isApiKeyModalOpen={isApiKeyModalOpen}
+            onRequestApiKey={() => setIsApiKeyModalOpen(true)}
           />
           
           {error && !anyLoading && <ErrorMessage message={error} />}

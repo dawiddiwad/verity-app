@@ -1,6 +1,10 @@
-import React, { useState, useRef, useCallback } from 'react';
-import { LoaderIcon, SparklesIcon, ArrowUpTrayIcon, DocumentTextIcon, XMarkIcon, PhotoIcon, BriefcaseIcon, TrashIcon, ChevronDownIcon, CheckIcon } from './Icons';
+
+
+import React, { useState, useRef, useCallback, useEffect } from 'react';
+import { LoaderIcon, SparklesIcon, ArrowDownTrayIcon, DocumentTextIcon, XMarkIcon, PhotoIcon, BriefcaseIcon, TrashIcon, ChevronDownIcon, CheckIcon } from './Icons';
 import { ResumeData, Job } from '../types';
+import { parseJobDescriptionFromUrl } from '../services/geminiService';
+
 
 interface ResumeInputFormProps {
   jobs: Job[];
@@ -18,6 +22,9 @@ interface ResumeInputFormProps {
   onAnalyze: () => void;
   isLoading: boolean;
   setError: (message: string | null) => void;
+  apiKey: string | null;
+  isApiKeyModalOpen: boolean;
+  onRequestApiKey: () => void;
 }
 
 const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
@@ -36,21 +43,31 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
   onAnalyze,
   isLoading,
   setError,
+  apiKey,
+  isApiKeyModalOpen,
+  onRequestApiKey,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSavingJob, setIsSavingJob] = useState(false);
+  const [jobUrl, setJobUrl] = useState('');
+  const [isParsingUrl, setIsParsingUrl] = useState(false);
+  const [isUrlParsingPending, setIsUrlParsingPending] = useState(false);
+
 
   const isJobSelected = !!selectedJobId && !isCreatingJob;
   const hasResumes = resumeFiles.length > 0;
   const currentStep = isJobSelected ? (hasResumes ? 3 : 2) : 1;
   
   const steps = [
-      { id: 1, name: 'Job Description' },
+      { id: 1, name: 'Select Job' },
       { id: 2, name: 'Upload Resumes' },
-      { id: 3, name: 'Analyze' },
+      { id: 3, name: 'Analyze Resumes' },
   ];
+  
+  const anyLoading = isLoading || isProcessingFile || isSavingJob || isParsingUrl;
+
 
   const handleJobSelectionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -76,6 +93,55 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
         setIsSavingJob(false);
     }
   };
+  
+  const performUrlParse = useCallback(async () => {
+    if (!jobUrl.trim() || !apiKey) {
+      return;
+    }
+
+    setIsParsingUrl(true);
+    setError(null);
+    try {
+      const { jobTitle: parsedTitle, jobDescription: parsedDescription } = await parseJobDescriptionFromUrl(jobUrl, apiKey);
+      setJobTitle(parsedTitle);
+      setJobDescription(parsedDescription);
+      setJobUrl('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "An unknown error occurred while parsing the URL.");
+    } finally {
+      setIsParsingUrl(false);
+    }
+  }, [apiKey, jobUrl, setError, setJobTitle, setJobDescription]);
+
+  const handleParseUrl = () => {
+    if (!jobUrl.trim()) {
+      setError("Please enter a URL to parse.");
+      return;
+    }
+    if (!apiKey) {
+      setIsUrlParsingPending(true);
+      onRequestApiKey();
+      return;
+    }
+    performUrlParse();
+  };
+  
+  useEffect(() => {
+    // Automatically parse if an API key was requested and is now available
+    if (isUrlParsingPending && apiKey) {
+      setIsUrlParsingPending(false);
+      performUrlParse();
+    }
+  }, [isUrlParsingPending, apiKey, performUrlParse]);
+
+  useEffect(() => {
+    // If the modal is closed and a parse was pending, but we still don't have a key,
+    // it means the user cancelled. Reset the pending state.
+    if (!isApiKeyModalOpen && isUrlParsingPending && !apiKey) {
+      setIsUrlParsingPending(false);
+    }
+  }, [isApiKeyModalOpen, isUrlParsingPending, apiKey]);
+
 
   const processFile = useCallback(async (file: File): Promise<ResumeData | null> => {
     if (!file) return null;
@@ -185,7 +251,7 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!isLoading && !isProcessingFile) setIsDragging(true);
+    if (!anyLoading) setIsDragging(true);
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
@@ -198,7 +264,7 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
-    if (isLoading || isProcessingFile) return;
+    if (anyLoading) return;
     if (e.dataTransfer.files) {
       handleFiles(e.dataTransfer.files);
     }
@@ -217,7 +283,6 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
 
   const isAnalyzeButtonDisabled = isLoading || isProcessingFile || resumeFiles.length === 0 || !selectedJobId;
   const buttonText = `Analyze ${resumeFiles.length > 1 ? `${resumeFiles.length} Resumes` : 'Resume'}`;
-  const anyLoading = isLoading || isProcessingFile || isSavingJob;
 
   return (
     <div className="space-y-8 bg-base-200 dark:bg-[#1C1C1E] p-8 rounded-2xl shadow-sm border border-base-300 dark:border-[#2C2C2E]">
@@ -253,10 +318,17 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
       {/* Job Details & Resume Upload Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Left Column: Job Management */}
-        <div className="flex flex-col space-y-6">
+        <div className="flex flex-col space-y-6 relative">
+             {isParsingUrl && (
+              <div className="absolute inset-0 bg-base-200/90 dark:bg-[#1C1C1E]/90 backdrop-blur-sm flex flex-col justify-center items-center z-10 rounded-lg animate-fade-in">
+                  <LoaderIcon className="h-8 w-8 animate-spin text-brand-primary" />
+                  <p className="mt-4 text-base font-semibold text-content-100 dark:text-white">Loading Job Details...</p>
+                  <p className="mt-1 text-sm text-content-200 dark:text-[#8D8D92]">Fetching content from URL.</p>
+              </div>
+            )}
             <div className="space-y-3">
                 <label htmlFor="job-selection" className="block text-sm font-medium text-content-200 dark:text-[#8D8D92]">
-                  <span className="font-bold text-content-100 dark:text-white">Step 1:</span> Job Description
+                  <span className="font-bold text-content-100 dark:text-white">Step 1:</span> Select Job
                 </label>
                 <div className="flex items-center gap-2">
                     <div className="relative w-full">
@@ -291,7 +363,38 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
                 </div>
             </div>
 
+            {isCreatingJob && (
+                <div className="space-y-2">
+                    <label htmlFor="job-url" className="text-xs font-medium text-content-200 dark:text-[#8D8D92]">Load from URL</label>
+                    <div className="flex items-center gap-2">
+                        <input
+                            type="url"
+                            id="job-url"
+                            value={jobUrl}
+                            onChange={(e) => setJobUrl(e.target.value)}
+                            disabled={anyLoading}
+                            placeholder="https://example.com/job/posting"
+                            className="block w-full rounded-lg border border-base-300 dark:border-[#2C2C2E] bg-base-100 dark:bg-[#121212] py-2.5 px-4 text-content-100 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm"
+                        />
+                        <button
+                            type="button"
+                            onClick={handleParseUrl}
+                            disabled={!jobUrl.trim() || anyLoading}
+                            className="p-2.5 bg-base-100 dark:bg-[#121212] border border-base-300 dark:border-[#2C2C2E] rounded-lg text-brand-primary hover:bg-base-300 dark:hover:bg-[#2C2C2E] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title="Fetch and Parse Job Description"
+                        >
+                            {isParsingUrl ? <LoaderIcon className="h-5 w-5 animate-spin"/> : <SparklesIcon className="h-5 w-5"/>}
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <div className="flex flex-col flex-1 space-y-6">
+                 {isCreatingJob && (
+                    <p className="text-xs font-medium text-content-200 dark:text-[#8D8D92] -mb-4">
+                        or fill details manually
+                    </p>
+                )}
                 <div>
                   <input
                     type="text"
@@ -307,7 +410,7 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
                 <div className="flex flex-col flex-grow">
                   <textarea
                     id="job-description"
-                    rows={12}
+                    rows={isCreatingJob ? 8 : 12}
                     className="block w-full flex-grow rounded-lg border border-base-300 dark:border-[#2C2C2E] bg-base-100 dark:bg-[#121212] py-2.5 px-4 text-content-100 dark:text-white placeholder:text-content-200/70 dark:placeholder:text-[#8D8D92]/70 read-only:bg-base-200 dark:read-only:bg-[#1C1C1E] read-only:text-content-200/70 dark:read-only:text-[#8D8D92]/70 focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm"
                     placeholder={isCreatingJob ? "Paste the job description you are targeting..." : "Select a job to see its description."}
                     value={jobDescription}
@@ -320,7 +423,7 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
                     <button
                         type="button"
                         onClick={handleSaveJob}
-                        disabled={isSavingJob || !jobTitle.trim() || !jobDescription.trim()}
+                        disabled={anyLoading || !jobTitle.trim() || !jobDescription.trim()}
                         className="w-full flex justify-center items-center rounded-lg bg-base-300 dark:bg-[#2C2C2E] px-4 py-2.5 text-sm font-semibold text-content-100 dark:text-white shadow-sm hover:bg-base-200 dark:hover:bg-[#1C1C1E] disabled:opacity-50 transition-colors"
                     >
                         {isSavingJob ? <><LoaderIcon className="animate-spin -ml-1 mr-3 h-5 w-5" />Saving Job...</> : 'Save Job'}
@@ -330,9 +433,20 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
         </div>
 
         {/* Right Column: Resume Upload */}
-        <div className="flex flex-col space-y-3">
+        <div className="flex flex-col space-y-3 relative">
+           {(isProcessingFile || isLoading) && (
+              <div className="absolute inset-0 bg-base-200/90 dark:bg-[#1C1C1E]/90 backdrop-blur-sm flex flex-col justify-center items-center z-10 rounded-lg animate-fade-in">
+                  <LoaderIcon className="h-8 w-8 animate-spin text-brand-primary" />
+                  <p className="mt-4 text-base font-semibold text-content-100 dark:text-white">
+                    {isProcessingFile ? 'Processing Files...' : 'Analyzing Resumes...'}
+                  </p>
+                  <p className="mt-1 text-sm text-content-200 dark:text-[#8D8D92]">
+                    {isProcessingFile ? 'Extracting text and preparing resumes.' : 'This may take a few moments.'}
+                  </p>
+              </div>
+            )}
            <label className="block text-sm font-medium text-content-200 dark:text-[#8D8D92]">
-            <span className="font-bold text-content-100 dark:text-white">Step 2:</span> Upload Resume(s) for "{isCreatingJob ? 'New Job' : jobTitle || 'No Job Selected'}"
+            <span className="font-bold text-content-100 dark:text-white">Step 2:</span> Upload Resumes
           </label>
            <div className="flex-grow flex flex-col" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
             <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.docx,.png,.jpg,.jpeg,.txt,.md" disabled={anyLoading || isCreatingJob} multiple />
@@ -343,22 +457,13 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
                   isDragging ? 'bg-brand-primary/10 border-brand-primary' : 'bg-base-100 dark:bg-[#121212] hover:border-content-200 dark:hover:border-[#8D8D92]'
                 } ${(isCreatingJob || anyLoading) ? 'cursor-not-allowed bg-base-100/50 dark:bg-[#121212]/50' : 'cursor-pointer'}`}
               >
-                {isProcessingFile ? (
-                    <div className="absolute inset-0 bg-base-200/80 dark:bg-[#1C1C1E]/80 flex flex-col justify-center items-center z-10 rounded-lg">
-                        <LoaderIcon className="h-10 w-10 animate-spin text-brand-primary" />
-                        <p className="mt-3 text-sm font-semibold">Processing files...</p>
-                    </div>
-                ) : (
-                    <>
-                        <ArrowUpTrayIcon className="mx-auto h-10 w-10 text-content-200 dark:text-[#8D8D92]" />
-                        <div className="mt-4 flex text-sm leading-6 text-content-200 dark:text-[#8D8D92]">
-                            <p className="pl-1">
-                                { !isCreatingJob ? <>Drag & drop files or <span className="font-semibold text-brand-primary">browse</span></> : 'Please save the job first' }
-                            </p>
-                        </div>
-                        <p className="text-xs leading-5 text-content-200/70 dark:text-[#8D8D92]/70 mt-1">PDF, DOCX, PNG, JPG, TXT, MD</p>
-                    </>
-                )}
+                <ArrowDownTrayIcon className="mx-auto h-10 w-10 text-content-200 dark:text-[#8D8D92]" />
+                <div className="mt-4 flex text-sm leading-6 text-content-200 dark:text-[#8D8D92]">
+                    <p className="pl-1">
+                        { !isCreatingJob ? <>Drag & drop files or <span className="font-semibold text-brand-primary">browse</span></> : 'Please save the job first' }
+                    </p>
+                </div>
+                <p className="text-xs leading-5 text-content-200/70 dark:text-[#8D8D92]/70 mt-1">PDF, DOCX, PNG, JPG, TXT, MD</p>
               </div>
             ) : (
                 <div className="flex flex-col flex-grow w-full rounded-lg border border-base-300 dark:border-[#2C2C2E] bg-base-100 dark:bg-[#121212] p-3 h-full min-h-[300px]">
