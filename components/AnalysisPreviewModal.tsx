@@ -1,4 +1,3 @@
-
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { StoredAnalysis } from '../types';
@@ -46,15 +45,15 @@ const AnalysisPreviewModal: React.FC<AnalysisPreviewModalProps> = ({ data }) => 
 
   const modalContent = (
     <div
-      className="p-5 bg-base-300 rounded-lg shadow-2xl w-full max-w-md border border-brand-primary/20"
+      className="p-5 bg-base-200 dark:bg-[#1C1C1E] rounded-xl shadow-2xl w-full max-w-sm border border-base-300 dark:border-[#2C2C2E]"
       style={style}
     >
-      <h3 className="text-lg font-bold text-content-100 mb-4">{analysis.candidateName}</h3>
+      <h3 className="text-lg font-bold text-content-100 dark:text-white mb-4">{analysis.candidateName}</h3>
       
       <div className="space-y-4">
         <div>
-          <h4 className="text-sm font-semibold text-content-200 flex items-center gap-2 mb-2">
-            <CheckCircleIcon className="h-4 w-4 text-green-400" />
+          <h4 className="text-sm font-semibold text-content-200 dark:text-[#8D8D92] flex items-center gap-2 mb-2">
+            <CheckCircleIcon className="h-4 w-4 text-success-text" />
             Matching Keywords
           </h4>
           {analysis.keywordAnalysis.matchingKeywords.length > 0 ? (
@@ -64,13 +63,13 @@ const AnalysisPreviewModal: React.FC<AnalysisPreviewModalProps> = ({ data }) => 
               ))}
             </div>
           ) : (
-             <p className="text-xs text-content-200/70">No matching keywords found.</p>
+             <p className="text-xs text-content-200/70 dark:text-[#8D8D92]/70">No matching keywords found.</p>
           )}
         </div>
 
         <div>
-          <h4 className="text-sm font-semibold text-content-200 flex items-center gap-2 mb-2">
-            <XCircleIcon className="h-4 w-4 text-yellow-400" />
+          <h4 className="text-sm font-semibold text-content-200 dark:text-[#8D8D92] flex items-center gap-2 mb-2">
+            <XCircleIcon className="h-4 w-4 text-warning-text" />
             Missing Keywords
           </h4>
           {analysis.keywordAnalysis.missingKeywords.length > 0 ? (
@@ -80,7 +79,7 @@ const AnalysisPreviewModal: React.FC<AnalysisPreviewModalProps> = ({ data }) => 
               ))}
             </div>
           ) : (
-            <p className="text-xs text-content-200/70">None! Great job.</p>
+            <p className="text-xs text-content-200/70 dark:text-[#8D8D92]/70">None! Great job.</p>
           )}
         </div>
       </div>

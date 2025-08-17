@@ -12,6 +12,7 @@ import ApiKeyModal from './components/ApiKeyModal';
 import { LoaderIcon } from './components/Icons';
 
 type DbState = 'uninitialized' | 'initializing' | 'needs-choice' | 'ready';
+export type Theme = 'light' | 'dark' | 'system';
 
 const App: React.FC = () => {
   const [resumeFiles, setResumeFiles] = useState<ResumeData[]>([]);
@@ -36,6 +37,19 @@ const App: React.FC = () => {
   const [apiKey, setApiKey] = useState<string | null>(() => sessionStorage.getItem('gemini-api-key'));
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [isAnalysisPending, setIsAnalysisPending] = useState(false);
+  
+  const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'dark');
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    const isDark =
+      theme === 'dark' ||
+      (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+    root.classList.toggle('dark', isDark);
+    localStorage.setItem('theme', theme);
+  }, [theme]);
+
 
   useEffect(() => {
     if (apiKey) {
@@ -302,10 +316,10 @@ const App: React.FC = () => {
   
   if (dbState === 'uninitialized' || dbState === 'initializing') {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-base-100 text-content-100">
+      <div className="flex items-center justify-center min-h-screen bg-base-100 dark:bg-[#121212] text-content-100 dark:text-white">
         <div className="text-center">
           <LoaderIcon className="mx-auto h-12 w-12 animate-spin text-brand-primary" />
-          <p className="mt-4 text-lg">Initializing Application...</p>
+          <p className="mt-4 text-lg font-semibold text-content-200 dark:text-[#8D8D92]">Initializing Application...</p>
         </div>
       </div>
     );
@@ -317,7 +331,7 @@ const App: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-base-100 text-content-100 font-sans">
+    <div className="min-h-screen bg-base-100 dark:bg-[#121212] text-content-100 dark:text-white font-sans leading-relaxed">
       <ApiKeyModal
         isOpen={isApiKeyModalOpen}
         onClose={() => {
@@ -332,9 +346,11 @@ const App: React.FC = () => {
         isExportDisabled={isExportDisabled}
         isLoading={anyLoading}
         onManageApiKey={() => setIsApiKeyModalOpen(true)}
+        theme={theme}
+        setTheme={setTheme}
       />
-      <main className="container mx-auto px-4 py-8">
-        <div className="max-w-5xl mx-auto space-y-8">
+      <main className="container mx-auto px-6 py-12">
+        <div className="max-w-7xl mx-auto space-y-12">
           <ResumeInputForm
             jobs={jobs}
             selectedJobId={selectedJobId}
@@ -356,11 +372,11 @@ const App: React.FC = () => {
           {error && !anyLoading && <ErrorMessage message={error} />}
           
           {anyLoading && (
-             <div className="text-center p-6 bg-base-200 rounded-lg animate-fade-in border border-dashed border-brand-primary/30">
+             <div className="text-center p-8 bg-base-200 dark:bg-[#1C1C1E] rounded-2xl animate-fade-in border border-base-300 dark:border-[#2C2C2E]">
                 <LoaderIcon className="mx-auto h-8 w-8 animate-spin text-brand-primary" />
-                <h2 className="mt-3 text-lg font-semibold text-content-100">{isImporting ? 'Importing Database...' : 'Analyzing Resumes...'}</h2>
-                {analysisProgress && <p className="mt-1 text-sm text-content-200">{analysisProgress}</p>}
-                {isImporting && <p className="mt-1 text-sm text-content-200">Please wait while we load the new database.</p>}
+                <h2 className="mt-4 text-lg font-semibold text-content-100 dark:text-white">{isImporting ? 'Importing Database...' : 'Analyzing Resumes...'}</h2>
+                {analysisProgress && <p className="mt-2 text-sm text-content-200 dark:text-[#8D8D92]">{analysisProgress}</p>}
+                {isImporting && <p className="mt-2 text-sm text-content-200 dark:text-[#8D8D92]">Please wait while we load the new database.</p>}
             </div>
           )}
             
@@ -368,10 +384,10 @@ const App: React.FC = () => {
             <div className="animate-fade-in">
               <button
                 onClick={() => setSelectedResult(null)}
-                className="mb-4 inline-flex items-center gap-2 rounded-md bg-base-300 px-4 py-2 text-sm font-semibold text-content-100 shadow-sm hover:bg-base-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary transition-all"
+                className="mb-6 inline-flex items-center gap-2 rounded-full bg-base-200 dark:bg-[#1C1C1E] px-4 py-2 text-sm font-semibold text-content-100 dark:text-white shadow-sm hover:bg-base-300 dark:hover:bg-[#2C2C2E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary transition-all"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                  <path fillRule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clipRule="evenodd" />
+                  <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
                 </svg>
                 Back to Summary
               </button>
@@ -390,7 +406,7 @@ const App: React.FC = () => {
           )}
         </div>
       </main>
-      <footer className="text-center py-4 text-xs text-content-200">
+      <footer className="text-center py-8 text-xs text-content-200 dark:text-[#8D8D92]">
         <p>Powered by Google Gemini. For informational purposes only.</p>
       </footer>
     </div>

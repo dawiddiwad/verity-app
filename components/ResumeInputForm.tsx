@@ -210,93 +210,90 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
   const anyLoading = isLoading || isProcessingFile || isSavingJob;
 
   return (
-    <div className="space-y-6 bg-base-200 p-6 rounded-lg shadow-lg">
-        {/* Job Management Section */}
-        <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-content-100 flex items-center gap-2">
-                <BriefcaseIcon className="h-6 w-6 text-brand-secondary"/>
-                1. Select or Create a Job
-            </h3>
-            <div className="flex items-center gap-2">
-                <div className="relative w-full">
-                    <select
-                        id="job-selection"
-                        value={isCreatingJob ? 'new' : selectedJobId ?? ''}
-                        onChange={handleJobSelectionChange}
-                        disabled={anyLoading}
-                        className="appearance-none block w-full rounded-md border-0 bg-base-100 py-2 pl-3 pr-10 text-content-100 shadow-sm ring-1 ring-inset ring-base-300 placeholder:text-content-200/50 focus:ring-2 focus:ring-inset focus:ring-brand-primary sm:text-sm sm:leading-6 transition-all"
-                    >
-                        <option value="" disabled>-- Select a Job --</option>
-                        {jobs.map(job => (
-                            <option key={job.id} value={job.id}>{job.title}</option>
-                        ))}
-                        <option value="new" className="font-bold text-brand-primary">[+] Create a New Job</option>
-                    </select>
-                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-content-200">
-                        <ChevronDownIcon className="h-5 w-5" aria-hidden="true" />
+    <div className="space-y-8 bg-base-200 dark:bg-[#1C1C1E] p-8 rounded-2xl shadow-sm border border-base-300 dark:border-[#2C2C2E]">
+        
+      {/* Job Details & Resume Upload Section */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        {/* Left Column: Job Management */}
+        <div className="flex flex-col space-y-6">
+            <div className="space-y-3">
+                <label htmlFor="job-selection" className="block text-sm font-medium text-content-200 dark:text-[#8D8D92]">
+                    Job Description
+                </label>
+                <div className="flex items-center gap-2">
+                    <div className="relative w-full">
+                        <select
+                            id="job-selection"
+                            value={isCreatingJob ? 'new' : selectedJobId ?? ''}
+                            onChange={handleJobSelectionChange}
+                            disabled={anyLoading}
+                            className="appearance-none block w-full rounded-lg border border-base-300 dark:border-[#2C2C2E] bg-base-100 dark:bg-[#121212] py-2.5 pl-4 pr-10 text-content-100 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm transition-all"
+                        >
+                            <option value="" disabled>-- Select a Job --</option>
+                            {jobs.map(job => (
+                                <option key={job.id} value={job.id}>{job.title}</option>
+                            ))}
+                            <option value="new" className="font-semibold text-brand-primary">[+] Create a New Job</option>
+                        </select>
+                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-content-200 dark:text-[#8D8D92]">
+                            <ChevronDownIcon className="h-5 w-5" aria-hidden="true" />
+                        </div>
                     </div>
+                    {!isCreatingJob && selectedJobId && (
+                        <button 
+                            type="button" 
+                            onClick={() => onDeleteJob(selectedJobId)}
+                            disabled={anyLoading}
+                            className="p-2 text-content-200 dark:text-[#8D8D92] hover:text-danger-text hover:bg-danger-bg rounded-full transition-colors disabled:opacity-50"
+                            title="Delete selected job"
+                        >
+                            <TrashIcon className="h-5 w-5"/>
+                        </button>
+                    )}
                 </div>
-                {!isCreatingJob && selectedJobId && (
-                    <button 
-                        type="button" 
-                        onClick={() => onDeleteJob(selectedJobId)}
-                        disabled={anyLoading}
-                        className="p-2 text-content-200 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-colors disabled:opacity-50"
-                        title="Delete selected job"
+            </div>
+
+            <div className="flex flex-col flex-1 space-y-6">
+                <div>
+                  <input
+                    type="text"
+                    id="job-title"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    readOnly={!isCreatingJob}
+                    disabled={anyLoading}
+                    placeholder={isCreatingJob ? "Job Title (e.g. Senior Frontend Engineer)" : "Job Title"}
+                    className="block w-full rounded-lg border border-base-300 dark:border-[#2C2C2E] bg-base-100 dark:bg-[#121212] py-2.5 px-4 text-content-100 dark:text-white read-only:bg-base-200 dark:read-only:bg-[#1C1C1E] read-only:text-content-200/70 dark:read-only:text-[#8D8D92]/70 focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm"
+                  />
+                </div>
+                <div className="flex flex-col flex-grow">
+                  <textarea
+                    id="job-description"
+                    rows={12}
+                    className="block w-full flex-grow rounded-lg border border-base-300 dark:border-[#2C2C2E] bg-base-100 dark:bg-[#121212] py-2.5 px-4 text-content-100 dark:text-white placeholder:text-content-200/70 dark:placeholder:text-[#8D8D92]/70 read-only:bg-base-200 dark:read-only:bg-[#1C1C1E] read-only:text-content-200/70 dark:read-only:text-[#8D8D92]/70 focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm"
+                    placeholder={isCreatingJob ? "Paste the job description you are targeting..." : "Select a job to see its description."}
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    readOnly={!isCreatingJob}
+                    disabled={anyLoading}
+                  />
+                </div>
+                {isCreatingJob && (
+                    <button
+                        type="button"
+                        onClick={handleSaveJob}
+                        disabled={isSavingJob || !jobTitle.trim() || !jobDescription.trim()}
+                        className="w-full flex justify-center items-center rounded-lg bg-base-300 dark:bg-[#2C2C2E] px-4 py-2.5 text-sm font-semibold text-content-100 dark:text-white shadow-sm hover:bg-base-200 dark:hover:bg-[#1C1C1E] disabled:opacity-50 transition-colors"
                     >
-                        <TrashIcon className="h-5 w-5"/>
+                        {isSavingJob ? <><LoaderIcon className="animate-spin -ml-1 mr-3 h-5 w-5" />Saving Job...</> : 'Save Job'}
                     </button>
                 )}
             </div>
         </div>
 
-      {/* Job Details & Resume Upload Section */}
-      <div className="flex flex-col md:flex-row gap-6">
-        <div className="flex flex-col flex-1 space-y-4">
-            <div>
-              <label htmlFor="job-title" className="block text-sm font-medium text-content-200 mb-2">
-                Job Title
-              </label>
-              <input
-                type="text"
-                id="job-title"
-                value={jobTitle}
-                onChange={(e) => setJobTitle(e.target.value)}
-                readOnly={!isCreatingJob}
-                disabled={anyLoading}
-                placeholder={isCreatingJob ? "e.g. Senior Frontend Engineer" : ""}
-                className="block w-full rounded-md border-0 bg-base-100 py-2 px-3 text-content-100 shadow-sm ring-1 ring-inset ring-base-300 read-only:bg-base-300/30 focus:ring-2 focus:ring-inset focus:ring-brand-primary sm:text-sm"
-              />
-            </div>
-            <div className="flex flex-col flex-grow">
-              <label htmlFor="job-description" className="block text-sm font-medium text-content-200 mb-2">
-                Job Description
-              </label>
-              <textarea
-                id="job-description"
-                rows={10}
-                className="block w-full flex-grow rounded-md border-0 bg-base-100 py-2 px-3 text-content-100 shadow-sm ring-1 ring-inset ring-base-300 placeholder:text-content-200/50 read-only:bg-base-300/30 focus:ring-2 focus:ring-inset focus:ring-brand-primary sm:text-sm sm:leading-6 transition-all"
-                placeholder={isCreatingJob ? "Paste the job description you are targeting..." : "Select a job to see its description."}
-                value={jobDescription}
-                onChange={(e) => setJobDescription(e.target.value)}
-                readOnly={!isCreatingJob}
-                disabled={anyLoading}
-              />
-            </div>
-            {isCreatingJob && (
-                <button
-                    type="button"
-                    onClick={handleSaveJob}
-                    disabled={isSavingJob || !jobTitle.trim() || !jobDescription.trim()}
-                    className="w-full flex justify-center items-center rounded-md bg-brand-secondary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
-                >
-                    {isSavingJob ? <><LoaderIcon className="animate-spin -ml-1 mr-3 h-5 w-5" />Saving Job...</> : 'Save Job'}
-                </button>
-            )}
-        </div>
-
-        <div className="flex flex-col flex-1">
-          <label className="block text-sm font-medium text-content-200 mb-2">
+        {/* Right Column: Resume Upload */}
+        <div className="flex flex-col space-y-3">
+           <label className="block text-sm font-medium text-content-200 dark:text-[#8D8D92]">
             Upload Resume(s) for "{isCreatingJob ? 'New Job' : jobTitle || 'No Job Selected'}"
           </label>
            <div className="flex-grow flex flex-col" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
@@ -304,43 +301,43 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
             {resumeFiles.length === 0 ? (
               <div
                 onClick={() => !anyLoading && !isCreatingJob && fileInputRef.current?.click()}
-                className={`relative flex flex-col flex-grow justify-center items-center w-full rounded-md border-2 border-dashed border-base-300 px-6 text-center transition-colors h-full min-h-[300px] ${
-                  isDragging ? 'bg-brand-primary/10 border-brand-primary' : 'hover:border-content-200'
-                } ${(isCreatingJob || anyLoading) ? 'cursor-not-allowed bg-base-100/50' : 'cursor-pointer'}`}
+                className={`relative flex flex-col flex-grow justify-center items-center w-full rounded-lg border border-dashed border-base-300 dark:border-[#2C2C2E] px-6 text-center transition-colors h-full min-h-[300px] ${
+                  isDragging ? 'bg-brand-primary/10 border-brand-primary' : 'bg-base-100 dark:bg-[#121212] hover:border-content-200 dark:hover:border-[#8D8D92]'
+                } ${(isCreatingJob || anyLoading) ? 'cursor-not-allowed bg-base-100/50 dark:bg-[#121212]/50' : 'cursor-pointer'}`}
               >
                 {isProcessingFile ? (
-                    <div className="absolute inset-0 bg-base-200/80 flex flex-col justify-center items-center z-10 rounded-md">
+                    <div className="absolute inset-0 bg-base-200/80 dark:bg-[#1C1C1E]/80 flex flex-col justify-center items-center z-10 rounded-lg">
                         <LoaderIcon className="h-10 w-10 animate-spin text-brand-primary" />
                         <p className="mt-3 text-sm font-semibold">Processing files...</p>
                     </div>
                 ) : (
                     <>
-                        <ArrowUpTrayIcon className="mx-auto h-12 w-12 text-content-200" />
-                        <div className="mt-4 flex text-sm leading-6 text-content-200">
+                        <ArrowUpTrayIcon className="mx-auto h-10 w-10 text-content-200 dark:text-[#8D8D92]" />
+                        <div className="mt-4 flex text-sm leading-6 text-content-200 dark:text-[#8D8D92]">
                             <p className="pl-1">
-                                { !isCreatingJob ? <>Drag & drop or <span className="font-semibold text-brand-primary">browse</span></> : 'Please save the job first' }
+                                { !isCreatingJob ? <>Drag & drop files or <span className="font-semibold text-brand-primary">browse</span></> : 'Please save the job first' }
                             </p>
                         </div>
-                        <p className="text-xs leading-5 text-content-200/70">PDF, DOCX, PNG, JPG, TXT, MD</p>
+                        <p className="text-xs leading-5 text-content-200/70 dark:text-[#8D8D92]/70 mt-1">PDF, DOCX, PNG, JPG, TXT, MD</p>
                     </>
                 )}
               </div>
             ) : (
-                <div className="flex flex-col flex-grow w-full rounded-md border border-base-300 bg-base-100 p-3 h-full min-h-[300px]">
+                <div className="flex flex-col flex-grow w-full rounded-lg border border-base-300 dark:border-[#2C2C2E] bg-base-100 dark:bg-[#121212] p-3 h-full min-h-[300px]">
                     <div className="flex-grow space-y-2 overflow-y-auto pr-1">
                         {resumeFiles.map(fileData => (
-                            <div key={fileData.fileName} className="flex items-center gap-3 bg-base-200 p-2 rounded-md">
-                                {fileData.image ? <PhotoIcon className="h-7 w-7 text-brand-primary flex-shrink-0" /> : <DocumentTextIcon className="h-7 w-7 text-brand-primary flex-shrink-0" />}
+                            <div key={fileData.fileName} className="flex items-center gap-3 bg-base-200 dark:bg-[#1C1C1E] p-2.5 rounded-lg">
+                                {fileData.image ? <PhotoIcon className="h-6 w-6 text-brand-primary flex-shrink-0" /> : <DocumentTextIcon className="h-6 w-6 text-brand-primary flex-shrink-0" />}
                                 <div className="flex-grow overflow-hidden">
-                                    <p className="text-sm font-medium text-content-100 truncate" title={fileData.fileName}>{fileData.fileName}</p>
+                                    <p className="text-sm font-medium text-content-100 dark:text-white truncate" title={fileData.fileName}>{fileData.fileName}</p>
                                 </div>
-                                <button type="button" onClick={() => handleRemoveFile(fileData.fileName)} className="p-1.5 text-content-200 hover:text-white rounded-full hover:bg-red-500/50 disabled:opacity-50" aria-label={`Remove ${fileData.fileName}`} disabled={anyLoading}>
+                                <button type="button" onClick={() => handleRemoveFile(fileData.fileName)} className="p-1 text-content-200 dark:text-[#8D8D92] hover:text-danger-text rounded-full hover:bg-danger-bg disabled:opacity-50" aria-label={`Remove ${fileData.fileName}`} disabled={anyLoading}>
                                     <XMarkIcon className="h-5 w-5" />
                                 </button>
                             </div>
                         ))}
                     </div>
-                     <button type="button" onClick={() => !anyLoading && !isCreatingJob && fileInputRef.current?.click()} disabled={anyLoading || isCreatingJob} className="mt-3 w-full flex justify-center items-center rounded-md bg-base-300 px-3 py-2 text-sm font-semibold text-content-100 shadow-sm hover:bg-base-200/80 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                     <button type="button" onClick={() => !anyLoading && !isCreatingJob && fileInputRef.current?.click()} disabled={anyLoading || isCreatingJob} className="mt-3 w-full flex justify-center items-center rounded-lg bg-base-200 dark:bg-[#1C1C1E] px-3 py-2 text-sm font-semibold text-content-100 dark:text-white shadow-sm hover:bg-base-300 dark:hover:bg-[#2C2C2E] disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                         Add More Files
                     </button>
                 </div>
@@ -353,7 +350,7 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
           type="button"
           onClick={onAnalyze}
           disabled={isAnalyzeButtonDisabled}
-          className="w-full flex justify-center items-center rounded-md bg-brand-primary px-4 py-3 text-sm font-semibold text-white shadow-sm hover:bg-sky-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          className="w-full flex justify-center items-center rounded-lg bg-brand-primary px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-brand-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
           {isLoading ? (<><LoaderIcon className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />Analyzing...</>) 
             : isProcessingFile ? (<><LoaderIcon className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />Processing...</>) 

@@ -14,6 +14,18 @@ interface AnalysisSummaryTableProps {
   isLoading: boolean;
 }
 
+const EmptyState: React.FC<{icon: React.ReactNode; title: string; children: React.ReactNode}> = ({icon, title, children}) => (
+    <div className="text-center py-20 px-6 bg-base-200 dark:bg-[#1C1C1E] rounded-2xl animate-fade-in border border-base-300 dark:border-[#2C2C2E]">
+        <div className="mx-auto h-14 w-14 text-content-200 dark:text-[#8D8D92] flex items-center justify-center">
+            {icon}
+        </div>
+        <h2 className="mt-4 text-xl font-semibold text-content-100 dark:text-white">{title}</h2>
+        <div className="mt-2 text-base text-content-200 dark:text-[#8D8D92] max-w-lg mx-auto">
+            {children}
+        </div>
+    </div>
+);
+
 const AnalysisSummaryTable: React.FC<AnalysisSummaryTableProps> = ({ results, jobs, selectedJobId, onSelectResult, onDeleteResult, onDeleteAll, isLoading }) => {
   const [hoveredResult, setHoveredResult] = useState<{ result: StoredAnalysis; position: DOMRect } | null>(null);
 
@@ -33,31 +45,29 @@ const AnalysisSummaryTable: React.FC<AnalysisSummaryTableProps> = ({ results, jo
 
   if (jobs.length === 0 && !isLoading) {
     return (
-        <div className="text-center py-16 px-6 bg-base-200 rounded-lg animate-fade-in border border-dashed border-base-300">
-            <BriefcaseIcon className="mx-auto h-12 w-12 text-brand-secondary" />
-            <h2 className="mt-4 text-2xl font-semibold text-content-100">Welcome to Verity App</h2>
-            <p className="mt-2 text-md text-content-200">
-                Your database is ready. To get started, create your first job description above.
-            </p>
-        </div>
+        <EmptyState 
+            icon={<BriefcaseIcon className="h-12 w-12"/>}
+            title="Welcome to Verity"
+        >
+            <p>Your database is ready. To get started, create your first job description above.</p>
+        </EmptyState>
     );
   }
 
   if (results.length === 0 && !isLoading) {
     const selectedJob = jobs.find(j => j.id === selectedJobId);
     return (
-      <div className="text-center py-16 px-6 bg-base-200 rounded-lg animate-fade-in border border-dashed border-base-300">
-        <SparklesIcon className="mx-auto h-12 w-12 text-brand-secondary" />
-        <h2 className="mt-4 text-2xl font-semibold text-content-100">
-            {selectedJob ? `Ready to analyze resumes for "${selectedJob.title}"?` : "No Job Selected"}
-        </h2>
-        <p className="mt-2 text-md text-content-200">
+      <EmptyState
+        icon={<SparklesIcon className="h-12 w-12"/>}
+        title={selectedJob ? `Ready to analyze resumes for "${selectedJob.title}"?` : "No Job Selected"}
+      >
+        <p>
           {selectedJob ? 'Upload one or more resumes above to see the analysis history here.' : 'Select a job from the dropdown to view its history.'}
         </p>
-         <p className="mt-2 text-sm text-content-200">
-            You can also import a full analysis history using the 'Import Database' button in the header.
+         <p className="mt-2 text-sm text-content-200 dark:text-[#8D8D92]">
+            You can also import a full analysis history using the 'Import' button in the header.
         </p>
-      </div>
+      </EmptyState>
     );
   }
 
@@ -86,14 +96,14 @@ const AnalysisSummaryTable: React.FC<AnalysisSummaryTableProps> = ({ results, jo
   
   return (
     <>
-      <div className="bg-base-200 rounded-lg shadow-lg animate-fade-in">
-        <div className="p-5 border-b border-base-300 flex justify-between items-center flex-wrap gap-2">
-          <h2 className="text-xl font-semibold text-content-100">Analysis History for "{selectedJobTitle}"</h2>
+      <div className="bg-base-200 dark:bg-[#1C1C1E] rounded-2xl shadow-sm border border-base-300 dark:border-[#2C2C2E] animate-fade-in">
+        <div className="p-5 flex justify-between items-center flex-wrap gap-2">
+          <h2 className="text-xl font-semibold text-content-100 dark:text-white">Analysis History for "{selectedJobTitle}"</h2>
           <div className="flex items-center gap-2">
             <button
               onClick={onDeleteAll}
               disabled={isLoading || results.length === 0}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-red-300 bg-red-500/10 border border-red-500/20 rounded-md hover:bg-red-500/20 disabled:opacity-50"
+              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-danger-text bg-danger-bg rounded-md hover:bg-danger-text/20 disabled:opacity-50"
               title={`Clear history for "${selectedJobTitle}"`}
             >
               <TrashIcon className="h-4 w-4" /> Clear Job History
@@ -101,30 +111,30 @@ const AnalysisSummaryTable: React.FC<AnalysisSummaryTableProps> = ({ results, jo
           </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm text-content-100">
-            <thead className="border-b border-base-300 bg-base-100/30">
+          <table className="min-w-full text-left text-sm text-content-100 dark:text-white">
+            <thead className="border-b border-base-300 dark:border-[#2C2C2E]">
               <tr>
-                <th scope="col" className="p-4 font-semibold">Candidate</th>
-                <th scope="col" className="p-4 font-semibold text-center">Match Score</th>
-                <th scope="col" className="p-4 font-semibold">AI Summary</th>
-                <th scope="col" className="p-4 font-semibold text-right">Actions</th>
+                <th scope="col" className="py-3.5 px-6 font-semibold">Candidate</th>
+                <th scope="col" className="py-3.5 px-6 font-semibold text-center">Match Score</th>
+                <th scope="col" className="py-3.5 px-6 font-semibold">AI Summary</th>
+                <th scope="col" className="py-3.5 px-6 font-semibold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-base-300">
+            <tbody className="divide-y divide-base-300 dark:divide-[#2C2C2E]">
               {sortedResults.map((result) => {
                 const isError = 'error' in result.analysis;
                 const candidateDisplayName = !isError ? (result.analysis as AnalysisResult).candidateName : result.fileName;
 
                 return (
-                <tr key={result.id} className="hover:bg-base-100/50 transition-colors duration-150">
-                  <td className="p-4 font-medium whitespace-nowrap">
+                <tr key={result.id} className="hover:bg-base-300 dark:hover:bg-[#2C2C2E] transition-colors duration-150">
+                  <td className="py-4 px-6 font-medium whitespace-nowrap">
                       <div className="flex flex-col">
                           <span className="font-semibold" title={result.fileName}>{candidateDisplayName}</span>
-                          <span className="text-xs text-content-200">{new Date(result.createdAt).toLocaleString()}</span>
+                          <span className="text-xs text-content-200 dark:text-[#8D8D92]">{new Date(result.createdAt).toLocaleString()}</span>
                       </div>
                   </td>
                   {isError ? (
-                    <td colSpan={2} className="p-4 text-red-400">
+                    <td colSpan={2} className="py-4 px-6 text-danger-text">
                       <div className="flex items-center gap-2 max-w-sm">
                         <ExclamationTriangleIcon className="h-5 w-5 flex-shrink-0" />
                         <div>
@@ -136,7 +146,7 @@ const AnalysisSummaryTable: React.FC<AnalysisSummaryTableProps> = ({ results, jo
                   ) : (
                     <>
                       <td 
-                        className="p-4"
+                        className="py-4 px-6"
                         onMouseEnter={(e) => handleMouseEnter(e, result)}
                         onMouseLeave={handleMouseLeave}
                       >
@@ -144,17 +154,17 @@ const AnalysisSummaryTable: React.FC<AnalysisSummaryTableProps> = ({ results, jo
                           <ScoreDonutChart score={(result.analysis as AnalysisResult).matchScore} />
                         </div>
                       </td>
-                      <td className="p-4 text-content-200 max-w-sm">
-                        <p className="line-clamp-3">{(result.analysis as AnalysisResult).summary}</p>
+                      <td className="py-4 px-6 text-content-200 dark:text-[#8D8D92] max-w-sm">
+                        <p className="line-clamp-3 leading-relaxed">{(result.analysis as AnalysisResult).summary}</p>
                       </td>
                     </>
                   )}
-                  <td className="p-4 text-right">
+                  <td className="py-4 px-6 text-right">
                     <div className="flex items-center justify-end gap-2">
                       {!('error' in result.analysis) && (
                         <button 
                           onClick={() => onSelectResult(result)}
-                          className="font-semibold text-brand-primary hover:text-sky-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="font-semibold text-brand-primary hover:underline transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label={`View details for ${result.fileName}`}
                           disabled={isLoading}
                         >
@@ -163,7 +173,7 @@ const AnalysisSummaryTable: React.FC<AnalysisSummaryTableProps> = ({ results, jo
                       )}
                       <button
                           onClick={() => onDeleteResult(result.id)}
-                          className="p-2 text-content-200 hover:text-red-400 hover:bg-red-500/10 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-2 text-content-200 dark:text-[#8D8D92] hover:text-danger-text hover:bg-danger-bg rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           aria-label={`Delete analysis for ${result.fileName}`}
                           disabled={isLoading}
                       >

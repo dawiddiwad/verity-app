@@ -3,20 +3,28 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Verity App</title>
+    <title>Verity</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
+        darkMode: 'class',
         theme: {
           extend: {
             colors: {
-              'brand-primary': '#0284c7',
-              'brand-secondary': '#4338ca',
-              'base-100': '#0f172a',
-              'base-200': '#1e293b',
-              'base-300': '#334155',
-              'content-100': '#cbd5e1',
-              'content-200': '#94a3b8',
+              'brand-primary': '#0A84FF',
+              // Light Theme (default)
+              'base-100': '#F2F2F7',
+              'base-200': '#FFFFFF',
+              'base-300': '#E5E5EA',
+              'content-100': '#1D1D1F',
+              'content-200': '#6E6E73',
+              // Accents
+              'success-bg': 'rgba(48, 209, 88, 0.15)',
+              'success-text': '#30D158',
+              'warning-bg': 'rgba(255, 159, 10, 0.15)',
+              'warning-text': '#FF9F0A',
+              'danger-bg': 'rgba(255, 69, 58, 0.15)',
+              'danger-text': '#FF453A',
             },
             animation: {
               'fade-in': 'fadeIn 0.5s ease-out forwards',
