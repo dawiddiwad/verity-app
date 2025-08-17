@@ -95,7 +95,7 @@ This view provides the complete, in-depth analysis for a single result.
     -   **Overall Match Score**: Donut chart and full AI summary.
     -   **Analyzed Against**: Shows the full text of the job description used for the analysis.
     -   **Original Resume**: A collapsible section, folded by default, that displays a preview of the resume content (text or image).
-    -   **Strengths** & **Areas for Improvement**: Bulleted lists.
+    -   **Strengths** & **Gaps**: Bulleted lists.
     -   **Keyword Analysis**: Matching and missing keywords.
 
 #### 3.5. Data Management (Import, Export)

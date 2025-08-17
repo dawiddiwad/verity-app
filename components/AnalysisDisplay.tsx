@@ -137,9 +137,9 @@ const AnalysisDisplay: React.FC<AnalysisDisplayProps> = ({ result }) => {
             {analysis.strengths.map((item, index) => <li key={index}>{item}</li>)}
           </ul>
         </AnalysisCard>
-        <AnalysisCard title="Areas for Improvement" icon={<PencilIcon className="text-warning-text" />}>
+        <AnalysisCard title="Gaps" icon={<PencilIcon className="text-warning-text" />}>
           <ul className="space-y-3 list-disc list-inside text-content-200 dark:text-[#8D8D92]">
-            {analysis.areasForImprovement.map((item, index) => <li key={index}>{item}</li>)}
+            {analysis.gaps.map((item, index) => <li key={index}>{item}</li>)}
           </ul>
         </AnalysisCard>
       </div>

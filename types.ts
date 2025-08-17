@@ -26,7 +26,7 @@ export interface AnalysisResult {
   matchScore: number;
   summary: string;
   strengths: string[];
-  areasForImprovement: string[];
+  gaps: string[];
   keywordAnalysis: KeywordAnalysis;
 }
 

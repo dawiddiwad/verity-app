@@ -22,10 +22,10 @@ const responseSchema = {
       items: { type: Type.STRING },
       description: "A list of the top 3-5 key strengths from the resume that directly match the job description's most important requirements."
     },
-    areasForImprovement: {
+    gaps: {
       type: Type.ARRAY,
       items: { type: Type.STRING },
-      description: "A list of 3-5 concrete areas where the resume could be improved to better align with the job description (e.g., missing skills, unclear accomplishments)."
+      description: "A list of 3-5 concrete areas where the resume is lacking compared to the job description (e.g., missing skills, unclear accomplishments)."
     },
     keywordAnalysis: {
       type: Type.OBJECT,
@@ -44,7 +44,7 @@ const responseSchema = {
       required: ["matchingKeywords", "missingKeywords"]
     }
   },
-  required: ['candidateName', 'matchScore', 'summary', 'strengths', 'areasForImprovement', 'keywordAnalysis']
+  required: ['candidateName', 'matchScore', 'summary', 'strengths', 'gaps', 'keywordAnalysis']
 };
 
 export const analyzeResume = async (resumeData: ResumeData, jobDesc: string, apiKey: string): Promise<AnalysisResult> => {
