@@ -8,6 +8,7 @@ import AnalysisDisplay from './components/AnalysisDisplay';
 import ErrorMessage from './components/ErrorMessage';
 import AnalysisSummaryTable from './components/AnalysisSummaryTable';
 import DatabaseSetup from './components/DatabaseSetup';
+import ApiKeyModal from './components/ApiKeyModal';
 import { LoaderIcon } from './components/Icons';
 
 type DbState = 'uninitialized' | 'initializing' | 'needs-choice' | 'ready';
@@ -32,6 +33,18 @@ const App: React.FC = () => {
 
   const [dbState, setDbState] = useState<DbState>('uninitialized');
 
+  const [apiKey, setApiKey] = useState<string | null>(() => sessionStorage.getItem('gemini-api-key'));
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [isAnalysisPending, setIsAnalysisPending] = useState(false);
+
+  useEffect(() => {
+    if (apiKey) {
+      sessionStorage.setItem('gemini-api-key', apiKey);
+    } else {
+      sessionStorage.removeItem('gemini-api-key');
+    }
+  }, [apiKey]);
+  
   const loadAllData = useCallback(async () => {
     try {
       const [loadedJobs, loadedAnalyses] = await Promise.all([dbService.getAllJobs(), dbService.getAllAnalyses()]);
@@ -95,8 +108,8 @@ const App: React.FC = () => {
 
   const handleAnalysis = useCallback(async () => {
     const selectedJob = jobs.find(j => j.id === selectedJobId);
-    if (resumeFiles.length === 0 || !selectedJob) {
-      setError('Please select a job and provide at least one resume file.');
+    if (resumeFiles.length === 0 || !selectedJob || !apiKey) {
+      setError('Please select a job, provide a resume, and set your API key.');
       return;
     }
     setIsLoading(true);
@@ -108,24 +121,33 @@ const App: React.FC = () => {
       const existingResumeHashes = await dbService.getAnalysisHashesForJob(selectedJob.id);
       const existingHashes = new Set(existingResumeHashes);
 
-      const analysisPromises = resumeFiles.map(async (file, index) => {
-        setAnalysisProgress(`Processing ${index + 1} of ${resumeFiles.length}: ${file.fileName}`);
+      for (let i = 0; i < resumeFiles.length; i++) {
+        const file = resumeFiles[i];
+        setAnalysisProgress(`Processing ${i + 1} of ${resumeFiles.length}: ${file.fileName}`);
         
         const resumeContent = file.text || file.image?.base64 || '';
-        if (!resumeContent) return; 
+        if (!resumeContent) continue;
 
         const resumeHash = await dbService.createHash(resumeContent);
         if (existingHashes.has(resumeHash)) {
           console.log(`Skipping duplicate resume '${file.fileName}' for this job.`);
-          return; 
+          continue;
         }
         
-        setAnalysisProgress(`Analyzing ${index + 1} of ${resumeFiles.length}: ${file.fileName}`);
+        setAnalysisProgress(`Analyzing ${i + 1} of ${resumeFiles.length}: ${file.fileName}`);
         let analysis: AnalysisResultWithError;
         try {
-            analysis = await analyzeResume(file, selectedJob.description);
+            analysis = await analyzeResume(file, selectedJob.description, apiKey);
         } catch(e) {
             const message = e instanceof Error ? e.message : 'Unknown analysis error';
+            if (message.toLowerCase().includes('api key not valid')) {
+                setError("Your API key is invalid. Please provide a valid key to continue.");
+                setApiKey(null);
+                setIsApiKeyModalOpen(true);
+                setIsLoading(false);
+                setAnalysisProgress(null);
+                return; // Stop the entire analysis process
+            }
             analysis = { error: message };
         }
         
@@ -139,9 +161,8 @@ const App: React.FC = () => {
             jobDescHash,
             analysis
         });
-      });
+      }
 
-      await Promise.all(analysisPromises);
       await loadAllData(); 
 
     } catch (err) {
@@ -152,7 +173,27 @@ const App: React.FC = () => {
       setAnalysisProgress(null);
       setResumeFiles([]);
     }
-  }, [resumeFiles, selectedJobId, jobs, loadAllData]);
+  }, [resumeFiles, selectedJobId, jobs, loadAllData, apiKey]);
+
+  const triggerAnalysis = () => {
+    if (!apiKey) {
+      setIsAnalysisPending(true);
+      setIsApiKeyModalOpen(true);
+    } else {
+      handleAnalysis();
+    }
+  };
+
+  useEffect(() => {
+    if (isAnalysisPending && apiKey) {
+      setIsAnalysisPending(false);
+      handleAnalysis();
+    }
+  }, [isAnalysisPending, apiKey, handleAnalysis]);
+  
+  const handleSaveApiKey = (newApiKey: string) => {
+    setApiKey(newApiKey);
+  };
 
   const handleSetResumes = (files: ResumeData[]) => {
     setResumeFiles(files);
@@ -277,11 +318,20 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-base-100 text-content-100 font-sans">
+      <ApiKeyModal
+        isOpen={isApiKeyModalOpen}
+        onClose={() => {
+            setIsApiKeyModalOpen(false);
+            setIsAnalysisPending(false);
+        }}
+        onSave={handleSaveApiKey}
+      />
       <Header 
         onImport={handleImportDatabase}
         onExport={handleExportDatabase}
         isExportDisabled={isExportDisabled}
         isLoading={anyLoading}
+        onManageApiKey={() => setIsApiKeyModalOpen(true)}
       />
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-5xl mx-auto space-y-8">
@@ -298,7 +348,7 @@ const App: React.FC = () => {
             onDeleteJob={handleDeleteJob}
             resumeFiles={resumeFiles}
             setResumeFiles={handleSetResumes}
-            onAnalyze={handleAnalysis}
+            onAnalyze={triggerAnalysis}
             isLoading={anyLoading}
             setError={setError}
           />

@@ -1,8 +1,8 @@
-# Verity App
+# Verity
 
 **AI Resume Analyzer**
 
-The Verity App is a powerful, locally-run web application that leverages the Google Gemini AI to analyze resumes against specific job descriptions. It provides a detailed breakdown of candidate suitability, helping users to quickly identify strengths, weaknesses, and keyword alignment. All data is stored privately in the user's browser, ensuring complete confidentiality.
+The Verity is a powerful, locally-run web application that leverages the Google Gemini AI to analyze resumes against specific job descriptions. It provides a detailed breakdown of candidate suitability, helping users to quickly identify strengths, weaknesses, and keyword alignment. All data is stored privately in the user's browser, ensuring complete confidentiality.
 
 ---
 
@@ -10,7 +10,7 @@ The Verity App is a powerful, locally-run web application that leverages the Goo
 
 ### 1. High-Level Overview
 
-The **Verity App** is a web application designed to help job seekers and hiring professionals evaluate how well a resume matches a specific job description, acting as an **AI Resume Analyzer**.
+**Verity** is a web application designed to help job seekers and hiring professionals evaluate how well a resume matches a specific job description, acting as an **AI Resume Analyzer**.
 
 The core workflow is job-centric. Users first create and save distinct "Jobs," each with a title and description. They can then select a job and analyze multiple resumes against it. The application uses the Google Gemini AI model to perform a detailed analysis, providing a match score, a summary, and keyword comparisons. All jobs and their associated analysis results are stored locally in a user-managed SQLite database file.
 
@@ -20,7 +20,7 @@ The core workflow is job-centric. Users first create and save distinct "Jobs," e
 
 The application is a single-page interface with a clean, modern, dark-themed design.
 
--   **Header**: A sticky header displaying the application title ("Verity App") and buttons for importing and exporting the entire database.
+-   **Header**: A sticky header displaying the application title ("Verity") and buttons for importing and exporting the entire database.
 -   **Main Content Area**: The central part of the application, containing two primary sections:
     1.  **Input Form**: For creating, selecting, and managing jobs, and for uploading resumes.
     2.  **Results Area**: Displays either the **Analysis History Table** (filtered by the selected job) or the **Detailed Analysis View** for a single result.
@@ -113,28 +113,9 @@ Global data operations are available from the main header for the entire SQLite 
 ### 4. AI and Technical Details
 
 -   **AI Model**: Google Gemini (`gemini-2.5-flash`).
+-   **Setting API key**: The app prompts the user for a GEMINI API KEY and securely stores it in the app's memory. It cannot be exported, but the user can change it at any time from the app header.
 -   **AI Interaction**: The AI is prompted to return a structured JSON object adhering to a predefined schema, which includes fields like `candidateName`, `matchScore`, `summary`, etc.
 -   **Duplicate Detection**: Before calling the AI, the application computes a SHA-1 hash of the resume content and the selected job's description. It queries the local database to see if an analysis for this specific resume-job pair already exists, preventing redundant API calls.
 -   **Local Storage**: Browser **SQLite database** (via `sql.js`/WASM). The database state is persisted in the browser's **IndexedDB** between sessions, providing robust, persistent storage.
 -   **Frontend Stack**: React, TypeScript, Tailwind CSS.
 -   **Libraries**: `sql.js` (SQLite WASM), PDF.js and Mammoth.js (file content extraction).
-
-
-###
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
-
-# Run and deploy your AI Studio app
-
-This contains everything you need to run your app locally.
-
-## Run Locally
-
-**Prerequisites:**  Node.js
-
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`

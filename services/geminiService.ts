@@ -2,12 +2,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { AnalysisResult, ResumeData } from '../types';
 
-if (!process.env.API_KEY) {
-    throw new Error("API_KEY environment variable not set");
-}
-
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-
 const responseSchema = {
   type: Type.OBJECT,
   properties: {
@@ -53,7 +47,12 @@ const responseSchema = {
   required: ['candidateName', 'matchScore', 'summary', 'strengths', 'areasForImprovement', 'keywordAnalysis']
 };
 
-export const analyzeResume = async (resumeData: ResumeData, jobDesc: string): Promise<AnalysisResult> => {
+export const analyzeResume = async (resumeData: ResumeData, jobDesc: string, apiKey: string): Promise<AnalysisResult> => {
+  if (!apiKey) {
+    throw new Error("API key is not provided.");
+  }
+  const ai = new GoogleGenAI({ apiKey });
+
   try {
     const instructionPrompt = `
 You are an expert career coach and professional resume writer. Your task is to analyze a resume against a given job description and provide a structured, actionable critique.
@@ -114,6 +113,10 @@ Now, generate the JSON output based on your analysis of the provided resume.
   } catch (error) {
     console.error("Error calling Gemini API:", error);
     if (error instanceof Error) {
+        // Propagate specific error messages for better handling upstream
+        if (error.message.includes('API key not valid')) {
+            throw new Error('API key not valid. Please check your key.');
+        }
         throw new Error(`Failed to get analysis from AI: ${error.message}`);
     }
     throw new Error("An unexpected error occurred while communicating with the AI.");

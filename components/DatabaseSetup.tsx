@@ -26,7 +26,7 @@ const DatabaseSetup: React.FC<DatabaseSetupProps> = ({ onCreate, onImport }) => 
             <div className="max-w-xl mx-auto text-center p-8 bg-base-200 rounded-lg shadow-2xl border border-base-300">
                 <DocumentTextIcon className="mx-auto h-16 w-16 text-brand-primary" />
                 <h1 className="mt-6 text-3xl font-bold tracking-tight text-content-100">
-                    Welcome to Verity App
+                    Welcome to Verity
                 </h1>
                 <p className="mt-4 text-lg text-content-200">
                     To begin, you need a database to store your jobs and analysis results.
