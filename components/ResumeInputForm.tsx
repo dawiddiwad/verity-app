@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { LoaderIcon, SparklesIcon, ArrowUpTrayIcon, DocumentTextIcon, XMarkIcon, PhotoIcon, BriefcaseIcon, TrashIcon, ChevronDownIcon } from './Icons';
+import { LoaderIcon, SparklesIcon, ArrowUpTrayIcon, DocumentTextIcon, XMarkIcon, PhotoIcon, BriefcaseIcon, TrashIcon, ChevronDownIcon, CheckIcon } from './Icons';
 import { ResumeData, Job } from '../types';
 
 interface ResumeInputFormProps {
@@ -41,6 +41,16 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isSavingJob, setIsSavingJob] = useState(false);
+
+  const isJobSelected = !!selectedJobId && !isCreatingJob;
+  const hasResumes = resumeFiles.length > 0;
+  const currentStep = isJobSelected ? (hasResumes ? 3 : 2) : 1;
+  
+  const steps = [
+      { id: 1, name: 'Job Description' },
+      { id: 2, name: 'Upload Resumes' },
+      { id: 3, name: 'Analyze' },
+  ];
 
   const handleJobSelectionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -212,13 +222,41 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
   return (
     <div className="space-y-8 bg-base-200 dark:bg-[#1C1C1E] p-8 rounded-2xl shadow-sm border border-base-300 dark:border-[#2C2C2E]">
         
+      <div className="mb-12">
+        <div className="flex items-start">
+        {steps.map((step, index) => (
+            <React.Fragment key={step.id}>
+            <div className="flex flex-col items-center text-center w-28">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 font-bold transition-all duration-300 ${
+                    step.id < currentStep 
+                        ? 'bg-brand-primary border-brand-primary text-white' 
+                        : step.id === currentStep 
+                        ? 'border-brand-primary text-brand-primary bg-brand-primary/10'
+                        : 'border-base-300 dark:border-[#2C2C2E] text-content-200 dark:text-[#8D8D92]'
+                }`}>
+                {step.id < currentStep ? <CheckIcon className="w-5 h-5" /> : step.id}
+                </div>
+                <p className={`mt-2 text-xs font-semibold ${
+                    step.id <= currentStep ? 'text-content-100 dark:text-white' : 'text-content-200 dark:text-[#8D8D92]'
+                }`}>{step.name}</p>
+            </div>
+            {index < steps.length - 1 && (
+                <div className={`flex-1 h-0.5 mt-5 transition-colors duration-300 ${
+                    step.id < currentStep ? 'bg-brand-primary' : 'bg-base-300 dark:bg-[#2C2C2E]'
+                }`}></div>
+            )}
+            </React.Fragment>
+        ))}
+        </div>
+      </div>
+
       {/* Job Details & Resume Upload Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Left Column: Job Management */}
         <div className="flex flex-col space-y-6">
             <div className="space-y-3">
                 <label htmlFor="job-selection" className="block text-sm font-medium text-content-200 dark:text-[#8D8D92]">
-                    Job Description
+                  <span className="font-bold text-content-100 dark:text-white">Step 1:</span> Job Description
                 </label>
                 <div className="flex items-center gap-2">
                     <div className="relative w-full">
@@ -294,7 +332,7 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
         {/* Right Column: Resume Upload */}
         <div className="flex flex-col space-y-3">
            <label className="block text-sm font-medium text-content-200 dark:text-[#8D8D92]">
-            Upload Resume(s) for "{isCreatingJob ? 'New Job' : jobTitle || 'No Job Selected'}"
+            <span className="font-bold text-content-100 dark:text-white">Step 2:</span> Upload Resume(s) for "{isCreatingJob ? 'New Job' : jobTitle || 'No Job Selected'}"
           </label>
            <div className="flex-grow flex flex-col" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
             <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.docx,.png,.jpg,.jpeg,.txt,.md" disabled={anyLoading || isCreatingJob} multiple />
