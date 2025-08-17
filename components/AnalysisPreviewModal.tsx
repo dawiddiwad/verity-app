@@ -20,28 +20,16 @@ const AnalysisPreviewModal: React.FC<AnalysisPreviewModalProps> = ({ data }) => 
 
   const analysis = data.result.analysis;
   const targetRect = data.position;
-  const windowHeight = window.innerHeight;
   const GAP = 10;
 
-  // Heuristic: Is there more space above the target than below?
-  // This determines whether to render the modal above or below the element.
-  const renderAbove = targetRect.top > windowHeight - targetRect.bottom;
-
   const style: React.CSSProperties = {
-    position: 'fixed',
-    left: `${targetRect.left + targetRect.width / 2}px`,
-    transform: 'translateX(-50%)',
+    position: 'absolute',
+    top: `${window.scrollY + targetRect.top - GAP}px`,
+    left: `${window.scrollX + targetRect.left + targetRect.width / 2}px`,
+    transform: 'translateX(-50%) translateY(-100%)',
     animation: 'fadeIn 0.2s ease-out forwards',
     zIndex: 50,
   };
-
-  if (renderAbove) {
-    // Position modal relative to the bottom of the viewport, making it grow upwards.
-    style.bottom = `${windowHeight - targetRect.top + GAP}px`;
-  } else {
-    // Position modal relative to the top of the viewport, making it grow downwards.
-    style.top = `${targetRect.bottom + GAP}px`;
-  }
 
   const modalContent = (
     <div
