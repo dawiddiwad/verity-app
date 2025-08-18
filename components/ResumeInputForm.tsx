@@ -21,6 +21,8 @@ interface ResumeInputFormProps {
   setResumeFiles: (data: ResumeData[]) => void;
   onAnalyze: () => void;
   isLoading: boolean;
+  isAnalyzing: boolean;
+  analysisProgress: string | null;
   setError: (message: string | null) => void;
   apiKey: string | null;
   isApiKeyModalOpen: boolean;
@@ -42,6 +44,8 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
   setResumeFiles,
   onAnalyze,
   isLoading,
+  isAnalyzing,
+  analysisProgress,
   setError,
   apiKey,
   isApiKeyModalOpen,
@@ -67,6 +71,20 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
   ];
   
   const anyLoading = isLoading || isProcessingFile || isSavingJob || isParsingUrl;
+  const showOverlay = isParsingUrl || isProcessingFile || isAnalyzing;
+
+  let overlayTitle = '';
+  let overlayMessage = '';
+  if (isParsingUrl) {
+      overlayTitle = 'Loading Job Details...';
+      overlayMessage = 'Fetching content from URL.';
+  } else if (isProcessingFile) {
+      overlayTitle = 'Processing Files...';
+      overlayMessage = 'Extracting text and preparing resumes.';
+  } else if (isAnalyzing) {
+      overlayTitle = 'Analyzing Resumes...';
+      overlayMessage = analysisProgress || 'This may take a few moments.';
+  }
 
 
   const handleJobSelectionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -281,7 +299,7 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
     setResumeFiles(resumeFiles.filter(f => f.fileName !== fileName));
   };
 
-  const isAnalyzeButtonDisabled = isLoading || isProcessingFile || resumeFiles.length === 0 || !selectedJobId;
+  const isAnalyzeButtonDisabled = anyLoading || resumeFiles.length === 0 || !selectedJobId;
   const buttonText = `Analyze ${resumeFiles.length > 1 ? `${resumeFiles.length} Resumes` : 'Resume'}`;
 
   return (
@@ -316,16 +334,17 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
       </div>
 
       {/* Job Details & Resume Upload Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
+        {showOverlay && (
+            <div className="absolute inset-0 bg-base-200/90 dark:bg-[#1C1C1E]/90 backdrop-blur-sm flex flex-col justify-center items-center z-10 rounded-lg animate-fade-in">
+                <LoaderIcon className="h-8 w-8 animate-spin text-brand-primary" />
+                <p className="mt-4 text-base font-semibold text-content-100 dark:text-white">{overlayTitle}</p>
+                <p className="mt-1 text-sm text-content-200 dark:text-[#8D8D92]">{overlayMessage}</p>
+            </div>
+        )}
+
         {/* Left Column: Job Management */}
-        <div className="flex flex-col space-y-6 relative">
-             {isParsingUrl && (
-              <div className="absolute inset-0 bg-base-200/90 dark:bg-[#1C1C1E]/90 backdrop-blur-sm flex flex-col justify-center items-center z-10 rounded-lg animate-fade-in">
-                  <LoaderIcon className="h-8 w-8 animate-spin text-brand-primary" />
-                  <p className="mt-4 text-base font-semibold text-content-100 dark:text-white">Loading Job Details...</p>
-                  <p className="mt-1 text-sm text-content-200 dark:text-[#8D8D92]">Fetching content from URL.</p>
-              </div>
-            )}
+        <div className="flex flex-col space-y-6">
             <div className="space-y-3">
                 <label htmlFor="job-selection" className="block text-sm font-medium text-content-200 dark:text-[#8D8D92]">
                   <span className="font-bold text-content-100 dark:text-white">Step 1:</span> Select Job
@@ -395,18 +414,19 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
                         or fill details manually
                     </p>
                 )}
-                <div>
-                  <input
-                    type="text"
-                    id="job-title"
-                    value={jobTitle}
-                    onChange={(e) => setJobTitle(e.target.value)}
-                    readOnly={!isCreatingJob}
-                    disabled={anyLoading}
-                    placeholder={isCreatingJob ? "Job Title (e.g. Senior Frontend Engineer)" : "Job Title"}
-                    className="block w-full rounded-lg border border-base-300 dark:border-[#2C2C2E] bg-base-100 dark:bg-[#121212] py-2.5 px-4 text-content-100 dark:text-white read-only:bg-base-200 dark:read-only:bg-[#1C1C1E] read-only:text-content-200/70 dark:read-only:text-[#8D8D92]/70 focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm"
-                  />
-                </div>
+                {isCreatingJob && (
+                    <div>
+                    <input
+                        type="text"
+                        id="job-title"
+                        value={jobTitle}
+                        onChange={(e) => setJobTitle(e.target.value)}
+                        disabled={anyLoading}
+                        placeholder="Job Title (e.g. Senior Frontend Engineer)"
+                        className="block w-full rounded-lg border border-base-300 dark:border-[#2C2C2E] bg-base-100 dark:bg-[#121212] py-2.5 px-4 text-content-100 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm"
+                    />
+                    </div>
+                )}
                 <div className="flex flex-col flex-grow">
                   <textarea
                     id="job-description"
@@ -433,18 +453,7 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
         </div>
 
         {/* Right Column: Resume Upload */}
-        <div className="flex flex-col space-y-3 relative">
-           {(isProcessingFile || isLoading) && (
-              <div className="absolute inset-0 bg-base-200/90 dark:bg-[#1C1C1E]/90 backdrop-blur-sm flex flex-col justify-center items-center z-10 rounded-lg animate-fade-in">
-                  <LoaderIcon className="h-8 w-8 animate-spin text-brand-primary" />
-                  <p className="mt-4 text-base font-semibold text-content-100 dark:text-white">
-                    {isProcessingFile ? 'Processing Files...' : 'Analyzing Resumes...'}
-                  </p>
-                  <p className="mt-1 text-sm text-content-200 dark:text-[#8D8D92]">
-                    {isProcessingFile ? 'Extracting text and preparing resumes.' : 'This may take a few moments.'}
-                  </p>
-              </div>
-            )}
+        <div className="flex flex-col space-y-3">
            <label className="block text-sm font-medium text-content-200 dark:text-[#8D8D92]">
             <span className="font-bold text-content-100 dark:text-white">Step 2:</span> Upload Resumes
           </label>
@@ -495,10 +504,8 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
           disabled={isAnalyzeButtonDisabled}
           className="w-full flex justify-center items-center rounded-lg bg-brand-primary px-4 py-3 text-base font-semibold text-white shadow-sm hover:bg-brand-primary/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:opacity-50 disabled:cursor-not-allowed transition-all"
         >
-          {isLoading ? (<><LoaderIcon className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />Analyzing...</>) 
-            : isProcessingFile ? (<><LoaderIcon className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" />Processing...</>) 
-            : (<><SparklesIcon className="-ml-1 mr-2 h-5 w-5" />{buttonText}</>
-          )}
+          <SparklesIcon className="-ml-1 mr-2 h-5 w-5" />
+          {buttonText}
         </button>
       </div>
     </div>

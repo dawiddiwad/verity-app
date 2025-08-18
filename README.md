@@ -12,7 +12,7 @@ Verity is a powerful, locally-run web application that leverages the Google Gemi
 
 **Verity** is a web application designed to help job seekers and hiring professionals evaluate how well a resume matches a specific job description, acting as an **AI Resume Analyzer**.
 
-The core workflow is job-centric. Users first create and save distinct "Jobs," each with a title and description. They can either paste the details manually or use the AI-powered **"Load from URL"** feature to automatically extract them from a job posting. They can then select a job and analyze multiple resumes against it. The application uses the Google Gemini AI model to perform a detailed analysis, providing a match score, a summary, and keyword comparisons. All jobs and their associated analysis results are stored locally in the browser's IndexedDB, managed by a user-controlled SQLite database file.
+The core workflow is job-centric. Users first create and save distinct "Jobs," each with a title and description. They can either paste the details manually or use the AI-powered **"Load from URL"** feature to automatically extract them from a job posting. They can then select a job and analyze multiple resumes against it. The application uses the Google Gemini AI model to perform a detailed analysis, providing a match score, a summary, and keyword comparisons. All jobs and their associated analysis results are stored locally in the browser's IndexedDB, managed by a user-controlled SQLite database file. The user experience is enhanced by a unified processing overlay that provides clear, consistent feedback during all background tasks.
 
 ---
 
@@ -23,7 +23,7 @@ The application is a single-page interface with a clean, modern, and theme-able 
 -   **Database Setup Screen**: On first launch, the user is prompted to either create a fresh local database or import an existing one.
 -   **Header**: A sticky header displaying the application title ("Verity") and controls for theme switching, managing the API key, and importing/exporting the entire database.
 -   **Main Content Area**: The central part of the application, containing two primary sections:
-    1.  **Input Form**: Features a step-by-step guide for creating/selecting jobs and uploading resumes.
+    1.  **Input Form**: Features a step-by-step guide for creating/selecting jobs and uploading resumes. A single, unified overlay provides feedback for all processing states.
     2.  **Results Area**: Displays either the **Analysis History Table** (filtered by the selected job) or the **Detailed Analysis View** for a single result.
 -   **API Key Modal**: A dialog for securely entering and saving the user's Google Gemini API key.
 -   **Footer**: A simple footer with a "Powered by Google Gemini" notice.
@@ -34,14 +34,14 @@ The application is a single-page interface with a clean, modern, and theme-able 
 
 #### 3.1. Job Management & Resume Upload
 
-This is the primary interaction area for managing jobs and initiating an analysis, guided by a clear step-by-step indicator.
+This is the primary interaction area for managing jobs and initiating an analysis, guided by a clear step-by-step indicator. A single, unified overlay covers this entire component during processing (URL parsing, file reading, analysis) to provide a clean and non-disruptive loading experience.
 
 ##### 3.1.1. Job Selection and Creation
 
 -   **Job Dropdown**: A `<select>` menu lists all saved jobs and includes an option to **"[+] Create a New Job"**.
--   **Selection Mode**: When an existing job is selected, its title and description are loaded into read-only fields. A trash icon allows the user to delete the selected job and all its analyses after confirmation.
+-   **Selection Mode**: When an existing job is selected, its title is displayed in the dropdown, and its description is loaded into a read-only field, eliminating redundancy. A trash icon allows the user to delete the selected job and all its analyses after confirmation.
 -   **Creation Mode**: When creating a new job, the user has two options:
-    1.  **Load from URL**: The user can paste a URL to a job posting. Clicking the "parse" button triggers the AI to fetch the page content, extract the job title and description, and auto-populate the form fields. A loading overlay provides clear feedback during this process.
+    1.  **Load from URL**: The user can paste a URL to a job posting. Clicking the "parse" button triggers the AI to fetch the page content, extract the job title and description, and auto-populate the form fields.
     2.  **Manual Entry**: The user can manually type or paste the job title and description into the fields.
 -   **Saving**: A "Save Job" button becomes active once a title and description are present, saving the new job to the database.
 
@@ -51,13 +51,12 @@ This is the primary interaction area for managing jobs and initiating an analysi
 -   **Input Methods**: Drag and Drop, or a traditional file browser.
 -   **Accepted File Formats**: `.pdf`, `.docx`, `.txt`, `.md`, `.png`, `.jpg`, `.jpeg`.
 -   **UI**: A clean dropzone displays a list of uploaded files, each with an icon and a remove button. An "Add More Files" button is available.
--   **Processing**: A loading overlay is shown while files are being processed (content extraction, etc.), creating a consistent experience with the URL parsing loader.
 
 ##### 3.1.3. Analysis Execution
 
 -   **Trigger**: A prominent "Analyze Resume(s)" button.
 -   **Prerequisites**: The button is **disabled** until a job is selected AND at least one resume is uploaded. If the API key is not set, clicking the button will first prompt the user to enter it.
--   **On Click**: A global loading state is activated. The analysis runs for each resume, and upon completion, the input file list is cleared, and the Analysis History table updates with the new results.
+-   **On Click**: The unified processing overlay appears with contextual information about the analysis progress. The "Analyze" button becomes disabled. Upon completion, the overlay disappears, the input file list is cleared, and the Analysis History table updates with the new results.
 
 #### 3.2. Analysis History Table
 

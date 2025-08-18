@@ -367,6 +367,8 @@ const App: React.FC = () => {
             setResumeFiles={handleSetResumes}
             onAnalyze={triggerAnalysis}
             isLoading={anyLoading}
+            isAnalyzing={isLoading}
+            analysisProgress={analysisProgress}
             setError={setError}
             apiKey={apiKey}
             isApiKeyModalOpen={isApiKeyModalOpen}
@@ -375,12 +377,11 @@ const App: React.FC = () => {
           
           {error && !anyLoading && <ErrorMessage message={error} />}
           
-          {anyLoading && (
+          {isImporting && (
              <div className="text-center p-8 bg-base-200 dark:bg-[#1C1C1E] rounded-2xl animate-fade-in border border-base-300 dark:border-[#2C2C2E]">
                 <LoaderIcon className="mx-auto h-8 w-8 animate-spin text-brand-primary" />
-                <h2 className="mt-4 text-lg font-semibold text-content-100 dark:text-white">{isImporting ? 'Importing Database...' : 'Analyzing Resumes...'}</h2>
-                {analysisProgress && <p className="mt-2 text-sm text-content-200 dark:text-[#8D8D92]">{analysisProgress}</p>}
-                {isImporting && <p className="mt-2 text-sm text-content-200 dark:text-[#8D8D92]">Please wait while we load the new database.</p>}
+                <h2 className="mt-4 text-lg font-semibold text-content-100 dark:text-white">Importing Database...</h2>
+                <p className="mt-2 text-sm text-content-200 dark:text-[#8D8D92]">Please wait while we load the new database.</p>
             </div>
           )}
             
