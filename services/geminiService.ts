@@ -54,21 +54,22 @@ export const analyzeResume = async (resumeData: ResumeData, jobDesc: string, api
 
   try {
     const instructionPrompt = `
-You are an expert career coach and professional resume writer. Your task is to analyze a resume against a given job description and provide a structured, actionable critique.
-The resume is provided in the next part, either as text or as an image. The job description is also provided below.
-Analyze the resume and compare it against the job description.
+You are a highly experienced recruiting manager with extensive expertise in talent acquisition and candidate evaluation. Your task is to analyze a candidate's resume in relation to a specific job description and provide a structured, actionable evaluation.
 
-CRITICAL INSTRUCTIONS:
-1. First, identify and extract the candidate's full name from the resume. The name should be formatted nicely (e.g., "John Doe"). If you cannot identify a name, use the resume's filename, which is: '${resumeData.fileName}'.
-2. Your entire response MUST be a single, valid JSON object that strictly adheres to the provided schema. Do not include any text, explanations, or markdown formatting outside of the JSON object.
-3. If the resume is an image, perform OCR and analyze the extracted text content.
+**Instructions:**
+- Carefully review the resume (provided as text or image) and the job description (provided below).
+- Your response must be a single, valid JSON object that strictly conforms to the provided schema. Do not include any text, commentary, or formatting outside of the JSON object.
+- If the resume is an image, perform OCR to extract and analyze the text.
+- Extract the candidate's full name from the resume. Format the name professionally (e.g., "Jane Smith"). If a name cannot be confidently identified, use the resume's filename: '${resumeData.fileName}'.
+- Ensure your analysis is objective, concise, and directly references the job requirements. Be mindfull about any restrictions on the job, such as location, hours, etc.
+- Populate all required fields in the schema. If information is missing, use reasonable defaults or leave the field empty, but do not omit required fields.
 
-JOB DESCRIPTION:
+**Job Description:**
 ---
 ${jobDesc}
 ---
 
-Now, generate the JSON output based on your analysis of the provided resume.
+Generate your response as a single JSON object that strictly matches the schema, with no extra text or formatting.
 `;
 
     const promptPart = { text: instructionPrompt };
@@ -184,20 +185,24 @@ export const parseJobDescriptionFromUrl = async (url: string, apiKey: string): P
 
   try {
     const instructionPrompt = `
-You are an AI assistant specializing in parsing job postings. Your task is to meticulously extract the job title and the complete job description from the raw text of a webpage provided below.
+You are an expert AI assistant for extracting structured job information from unstructured web page text. Your task is to accurately identify and extract the job title and the full job requirements from the provided raw webpage text.
 
-Please follow these guidelines:
-1.  **Identify Job Title**: Extract the most accurate and specific job title.
-2.  **Extract Full Description**: Capture the entire body of the job description. This includes all relevant details like responsibilities, qualifications, preferred skills, benefits, and company information. Be thorough and do not omit sections.
-3.  **Clean and Format**: The final description should be cleaned of any remaining irrelevant text (like navigation links or footer text that might have been missed) and formatted for readability with appropriate paragraph breaks (using '\\n').
-4.  **JSON Output**: Your response must be a single, valid JSON object that strictly adheres to the provided schema. Do not add any commentary before or after the JSON.
+**Instructions:**
+- **Job Title**: Find and extract the most precise and relevant job title for the position being advertised. Avoid generic or company-wide titles.
+- **Job Description**: Extract only the requirements for the candidate and the job itself. This includes all sections that describe what is required from the candidate, such as responsibilities, required and preferred skills, qualifications, experience, education, and technical or soft skills. If there are any restrictions on the job, such as location, hours, or other restrictions, include them in the job description.  
+  - **Exclude**: Do NOT include any sections or content about benefits, compensation, what the company offers, perks, company culture, about the company, or any information not directly related to what is required from the candidate.
+  - If the requirements are spread across multiple sections (e.g., "Responsibilities", "Requirements", "Qualifications", "Skills"), combine them into a single, clean, readable text.
+- **Noise Removal**: Exclude any irrelevant content such as navigation menus, footers, headers, copyright notices, unrelated links, and any non-requirement sections.
+- **Formatting**: Present the job description as clean, readable text. Use '\\n' for paragraph breaks to preserve structure and readability.
+- **Output Format**: Return only a single, valid JSON object that matches the schema. Do not include any explanations, comments, or text outside the JSON object.
 
-RAW WEBPAGE TEXT (first 200,000 characters):
+Below is the raw webpage text (first 200,000 characters):
+
 ---
-${cleanText.substring(0, 200000)} 
+${cleanText.substring(0, 200000)}
 ---
 
-Generate the JSON output.
+Extract and return the JSON object as specified above.
 `;
     
     const response = await ai.models.generateContent({
