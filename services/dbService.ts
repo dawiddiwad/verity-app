@@ -1,6 +1,6 @@
 import initSqlJs from 'sql.js/dist/sql-wasm.js';
 import type { Database } from 'sql.js';
-import { StoredAnalysis, Job, ResumeData } from '../types';
+import { StoredAnalysis, Job, ResumeData, AnalysisResultWithError } from '../types';
 
 let db: Database;
 let SQL: any;
@@ -136,6 +136,11 @@ export async function addJob(title: string, description: string): Promise<Job> {
   };
 }
 
+export async function updateJob(jobId: number, title: string, description: string): Promise<void> {
+  db.run('UPDATE jobs SET title = ?, description = ? WHERE id = ?', [title, description, jobId]);
+  await saveDB();
+}
+
 export async function getAllJobs(): Promise<Job[]> {
   const res = db.exec("SELECT * FROM jobs ORDER BY createdAt DESC");
   if (res.length === 0) return [];
@@ -199,6 +204,20 @@ export async function addAnalysis(analysisData: Omit<StoredAnalysis, 'id' | 'cre
     createdAt: new Date(row[9] as string),
   };
 }
+
+export async function updateAnalysis(
+  analysisId: number,
+  newAnalysis: AnalysisResultWithError,
+  newJobDescHash: string,
+  newJobDescription: string
+): Promise<void> {
+  db.run(
+    'UPDATE analysisResults SET analysis = ?, jobDescHash = ?, jobDescription = ? WHERE id = ?',
+    [JSON.stringify(newAnalysis), newJobDescHash, newJobDescription, analysisId]
+  );
+  await saveDB();
+}
+
 
 export async function getAllAnalyses(): Promise<StoredAnalysis[]> {
   const res = db.exec("SELECT * FROM analysisResults ORDER BY createdAt DESC");

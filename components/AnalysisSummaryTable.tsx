@@ -11,6 +11,7 @@ interface AnalysisSummaryTableProps {
   onSelectResult: (result: StoredAnalysis) => void;
   onDeleteResult: (id: number) => void;
   onDeleteAll: () => void;
+  onReanalyzeAll: () => void;
   isLoading: boolean;
 }
 
@@ -26,7 +27,7 @@ const EmptyState: React.FC<{icon: React.ReactNode; title: string; children: Reac
     </div>
 );
 
-const AnalysisSummaryTable: React.FC<AnalysisSummaryTableProps> = ({ results, jobs, selectedJobId, onSelectResult, onDeleteResult, onDeleteAll, isLoading }) => {
+const AnalysisSummaryTable: React.FC<AnalysisSummaryTableProps> = ({ results, jobs, selectedJobId, onSelectResult, onDeleteResult, onDeleteAll, onReanalyzeAll, isLoading }) => {
   const [hoveredResult, setHoveredResult] = useState<{ result: StoredAnalysis; position: DOMRect } | null>(null);
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLTableCellElement>, result: StoredAnalysis) => {
@@ -97,16 +98,28 @@ const AnalysisSummaryTable: React.FC<AnalysisSummaryTableProps> = ({ results, jo
   return (
     <>
       <div className="bg-base-200 dark:bg-[#1C1C1E] rounded-2xl shadow-sm border border-base-300 dark:border-[#2C2C2E] animate-fade-in">
-        <div className="p-5 flex justify-between items-center flex-wrap gap-2">
-          <h2 className="text-xl font-semibold text-content-100 dark:text-white">Analysis History for "{selectedJobTitle}"</h2>
-          <div className="flex items-center gap-2">
+        <div className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <h2 className="text-xl font-semibold text-content-100 dark:text-white truncate flex-1 min-w-0" title={`Analysis History for "${selectedJobTitle}"`}>
+            Analysis History for "{selectedJobTitle}"
+          </h2>
+          <div className="flex items-center gap-2 self-end sm:self-auto flex-shrink-0">
+            <button
+              onClick={onReanalyzeAll}
+              disabled={isLoading || results.filter(r => !('error' in r.analysis)).length === 0}
+              className="flex justify-center items-center gap-2 px-3 py-1.5 text-xs font-semibold text-brand-primary bg-brand-primary/10 rounded-md hover:bg-brand-primary/20 disabled:opacity-50 transition-colors"
+              title={`Re-analyze all resumes for "${selectedJobTitle}"`}
+            >
+              <SparklesIcon className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden md:inline whitespace-nowrap">Re-analyze All</span>
+            </button>
             <button
               onClick={onDeleteAll}
               disabled={isLoading || results.length === 0}
-              className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold text-danger-text bg-danger-bg rounded-md hover:bg-danger-text/20 disabled:opacity-50"
+              className="flex justify-center items-center gap-2 px-3 py-1.5 text-xs font-semibold text-danger-text bg-danger-bg rounded-md hover:bg-danger-text/20 disabled:opacity-50"
               title={`Clear history for "${selectedJobTitle}"`}
             >
-              <TrashIcon className="h-4 w-4" /> Clear Job History
+              <TrashIcon className="h-4 w-4 flex-shrink-0" />
+              <span className="hidden md:inline whitespace-nowrap">Clear Job History</span>
             </button>
           </div>
         </div>

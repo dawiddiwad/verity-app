@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { StoredAnalysis, ResumeData, AnalysisResultWithError, Job } from './types';
 import { analyzeResume } from './services/geminiService';
@@ -7,6 +6,7 @@ import Header from './components/Header';
 import ResumeInputForm from './components/ResumeInputForm';
 import AnalysisDisplay from './components/AnalysisDisplay';
 import ErrorMessage from './components/ErrorMessage';
+import WarningMessage from './components/WarningMessage';
 import AnalysisSummaryTable from './components/AnalysisSummaryTable';
 import DatabaseSetup from './components/DatabaseSetup';
 import ApiKeyModal from './components/ApiKeyModal';
@@ -21,6 +21,7 @@ const App: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [selectedJobId, setSelectedJobId] = useState<number | null>(null);
   const [isCreatingJob, setIsCreatingJob] = useState(false);
+  const [isJobEditing, setIsJobEditing] = useState(false);
 
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescriptionText, setJobDescriptionText] = useState('');
@@ -32,12 +33,14 @@ const App: React.FC = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [analysisProgress, setAnalysisProgress] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [warning, setWarning] = useState<string | null>(null);
 
   const [dbState, setDbState] = useState<DbState>('uninitialized');
 
   const [apiKey, setApiKey] = useState<string | null>(() => sessionStorage.getItem('gemini-api-key'));
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [isAnalysisPending, setIsAnalysisPending] = useState(false);
+  const [isReanalysisPending, setIsReanalysisPending] = useState(false);
   
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'dark');
 
@@ -50,6 +53,10 @@ const App: React.FC = () => {
     root.classList.toggle('dark', isDark);
     localStorage.setItem('theme', theme);
   }, [theme]);
+
+  useEffect(() => {
+    if (error) setWarning(null);
+  }, [error]);
 
 
   useEffect(() => {
@@ -111,6 +118,7 @@ const App: React.FC = () => {
       setJobTitle('');
       setJobDescriptionText('');
       setSelectedResult(null);
+      setIsJobEditing(false);
     } else {
       const selectedJob = jobs.find(j => j.id === selectedJobId);
       if (selectedJob) {
@@ -120,15 +128,19 @@ const App: React.FC = () => {
       }
     }
   }, [selectedJobId, jobs, isCreatingJob]);
+  
+  const selectedJob = useMemo(() => jobs.find(j => j.id === selectedJobId), [jobs, selectedJobId]);
+
+  const hasJobChanged = !isCreatingJob && selectedJob ? (jobTitle.trim() !== selectedJob.title || jobDescriptionText.trim() !== selectedJob.description) : false;
 
   const handleAnalysis = useCallback(async () => {
-    const selectedJob = jobs.find(j => j.id === selectedJobId);
     if (resumeFiles.length === 0 || !selectedJob || !apiKey) {
       setError('Please select a job, provide a resume, and set your API key.');
       return;
     }
     setIsLoading(true);
     setError(null);
+    setWarning(null);
     setSelectedResult(null);
 
     try {
@@ -188,7 +200,7 @@ const App: React.FC = () => {
       setAnalysisProgress(null);
       setResumeFiles([]);
     }
-  }, [resumeFiles, selectedJobId, jobs, loadAllData, apiKey]);
+  }, [resumeFiles, selectedJobId, jobs, loadAllData, apiKey, selectedJob]);
 
   const triggerAnalysis = () => {
     if (!apiKey) {
@@ -244,9 +256,11 @@ const App: React.FC = () => {
 
   const handleExportDatabase = async () => {
     setError(null);
+    setWarning(null);
     try {
       await dbService.exportDBFile();
-    } catch (err) {
+    } catch (err)
+      {
       setError("Failed to export database.");
       console.error(err);
     }
@@ -254,6 +268,7 @@ const App: React.FC = () => {
 
   const handleImportDatabase = async (dbFile: File) => {
     setError(null);
+    setWarning(null);
     setIsImporting(true);
     try {
       await dbService.importDBFile(dbFile);
@@ -269,6 +284,7 @@ const App: React.FC = () => {
   
   const handleCreateNewDatabase = async () => {
     setError(null);
+    setWarning(null);
     try {
         await dbService.createNewDB();
         await loadAllData();
@@ -279,12 +295,38 @@ const App: React.FC = () => {
     }
   }
 
-  const handleSaveNewJob = async (newTitle: string, newDescription: string): Promise<Job> => {
+  const handleSaveNewJob = async (newTitle: string, newDescription: string): Promise<Job | null> => {
+      const isDuplicate = jobs.some(j => j.title.trim().toLowerCase() === newTitle.trim().toLowerCase());
+      if (isDuplicate) {
+          setError(`A job with the title "${newTitle}" already exists.`);
+          return null;
+      }
       const newJob = await dbService.addJob(newTitle, newDescription);
       await loadAllData();
       setIsCreatingJob(false);
       setSelectedJobId(newJob.id);
       return newJob;
+  };
+
+  const handleUpdateJob = async (id: number, newTitle: string, newDescription: string) => {
+      const isDuplicate = jobs.some(j => j.id !== id && j.title.trim().toLowerCase() === newTitle.trim().toLowerCase());
+      if (isDuplicate) {
+          setError(`Another job with the title "${newTitle}" already exists.`);
+          return;
+      }
+      await dbService.updateJob(id, newTitle, newDescription);
+      await loadAllData();
+      setIsJobEditing(false);
+      setWarning("Job details updated. For best results, consider re-analyzing existing resumes against the new description.");
+  };
+
+  const handleCancelEdit = () => {
+    if (selectedJob) {
+        setJobTitle(selectedJob.title);
+        setJobDescriptionText(selectedJob.description);
+    }
+    setIsJobEditing(false);
+    setError(null);
   };
 
   const handleDeleteJob = async (jobId: number) => {
@@ -298,6 +340,9 @@ const App: React.FC = () => {
   };
 
   const handleJobSelection = (selection: 'new' | number) => {
+    setWarning(null);
+    setError(null);
+    setIsJobEditing(false);
     if (selection === 'new') {
         setIsCreatingJob(true);
         setSelectedJobId(null);
@@ -306,6 +351,86 @@ const App: React.FC = () => {
         setSelectedJobId(selection);
     }
   };
+
+  const handleReanalyzeAll = useCallback(async () => {
+    if (!selectedJob || analysisResults.filter(r => r.jobId === selectedJobId && !('error' in r.analysis)).length === 0) {
+      setError('Cannot re-analyze. Ensure a job with successful analyses is selected.');
+      return;
+    }
+
+    if (!apiKey) {
+      setError('Please set your API key to re-analyze.');
+      setIsReanalysisPending(true);
+      setIsApiKeyModalOpen(true);
+      return;
+    }
+    
+    const resultsToReanalyze = analysisResults.filter(r => r.jobId === selectedJobId && !('error' in r.analysis));
+    if (resultsToReanalyze.length === 0) {
+        setWarning("No successful analyses to re-run for this job.");
+        return;
+    }
+
+    if (!window.confirm(`Are you sure you want to re-analyze all ${resultsToReanalyze.length} resumes for "${selectedJob.title}"? This will use your API credits and replace the existing analysis data.`)) {
+        return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+    setWarning(null);
+    setSelectedResult(null);
+
+    try {
+        const newJobDescHash = await dbService.createHash(selectedJob.description);
+        
+        for (let i = 0; i < resultsToReanalyze.length; i++) {
+            const result = resultsToReanalyze[i];
+            setAnalysisProgress(`Re-analyzing ${i + 1} of ${resultsToReanalyze.length}: ${result.fileName}`);
+            
+            let newAnalysis: AnalysisResultWithError;
+            try {
+                newAnalysis = await analyzeResume(result.resumeData, selectedJob.description, apiKey);
+            } catch(e) {
+                const message = e instanceof Error ? e.message : 'Unknown analysis error';
+                if (message.toLowerCase().includes('api key not valid')) {
+                    setError("Your API key is invalid. Please provide a valid key to continue.");
+                    setApiKey(null);
+                    setIsApiKeyModalOpen(true);
+                    setIsLoading(false);
+                    setAnalysisProgress(null);
+                    return; 
+                }
+                newAnalysis = { error: `Re-analysis failed: ${message}` };
+            }
+
+            await dbService.updateAnalysis(result.id, newAnalysis, newJobDescHash, selectedJob.description);
+        }
+        await loadAllData();
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : 'An unknown error occurred during re-analysis.');
+    } finally {
+      setIsLoading(false);
+      setAnalysisProgress(null);
+    }
+}, [selectedJobId, jobs, analysisResults, loadAllData, apiKey, selectedJob]);
+
+const triggerReanalysis = () => {
+    if (!apiKey) {
+      setIsReanalysisPending(true);
+      setIsApiKeyModalOpen(true);
+    } else {
+      handleReanalyzeAll();
+    }
+};
+
+useEffect(() => {
+    if (isReanalysisPending && apiKey) {
+        setIsReanalysisPending(false);
+        handleReanalyzeAll();
+    }
+}, [isReanalysisPending, apiKey, handleReanalyzeAll]);
+
 
   const filteredAnalysisResults = useMemo(() => {
     if (!selectedJobId) return [];
@@ -338,6 +463,7 @@ const App: React.FC = () => {
         onClose={() => {
             setIsApiKeyModalOpen(false);
             setIsAnalysisPending(false);
+            setIsReanalysisPending(false);
         }}
         onSave={handleSaveApiKey}
       />
@@ -357,11 +483,16 @@ const App: React.FC = () => {
             selectedJobId={selectedJobId}
             onJobSelectionChange={handleJobSelection}
             isCreatingJob={isCreatingJob}
+            isJobEditing={isJobEditing}
+            setIsJobEditing={setIsJobEditing}
+            hasJobChanged={hasJobChanged}
             jobTitle={jobTitle}
             jobDescription={jobDescriptionText}
             setJobTitle={setJobTitle}
             setJobDescription={setJobDescriptionText}
             onSaveNewJob={handleSaveNewJob}
+            onUpdateJob={handleUpdateJob}
+            onCancelEdit={handleCancelEdit}
             onDeleteJob={handleDeleteJob}
             resumeFiles={resumeFiles}
             setResumeFiles={handleSetResumes}
@@ -376,6 +507,7 @@ const App: React.FC = () => {
           />
           
           {error && !anyLoading && <ErrorMessage message={error} />}
+          {warning && !anyLoading && <WarningMessage message={warning} />}
           
           {isImporting && (
              <div className="text-center p-8 bg-base-200 dark:bg-[#1C1C1E] rounded-2xl animate-fade-in border border-base-300 dark:border-[#2C2C2E]">
@@ -406,6 +538,7 @@ const App: React.FC = () => {
               onSelectResult={handleViewDetails} 
               onDeleteResult={handleDeleteResult}
               onDeleteAll={handleDeleteAllResultsForJob}
+              onReanalyzeAll={triggerReanalysis}
               isLoading={anyLoading}
             />
           )}

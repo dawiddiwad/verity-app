@@ -59,7 +59,7 @@ const Header: React.FC<HeaderProps> = ({ onImport, onExport, isExportDisabled, i
                     className={buttonClasses}
                     title="Import from a .db file"
                 >
-                    <ArrowUpTrayIcon className="h-4 w-4" /> 
+                    <ArrowDownTrayIcon className="h-4 w-4" /> 
                     <span className="hidden sm:inline">Import</span>
                 </button>
                 <button
@@ -68,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({ onImport, onExport, isExportDisabled, i
                     className={buttonClasses}
                     title="Export the entire database to a .db file"
                 >
-                    <ArrowDownTrayIcon className="h-4 w-4" /> 
+                    <ArrowUpTrayIcon className="h-4 w-4" /> 
                     <span className="hidden sm:inline">Export</span>
                 </button>
           </div>

@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { VerityLogo, ArrowUpTrayIcon } from './Icons';
+import { VerityLogo, ArrowDownTrayIcon } from './Icons';
 
 interface DatabaseSetupProps {
     onCreate: () => void;
@@ -52,7 +52,7 @@ const DatabaseSetup: React.FC<DatabaseSetupProps> = ({ onCreate, onImport }) => 
                         onClick={handleImportClick}
                         className="flex flex-1 items-center justify-center gap-3 rounded-lg bg-base-100 dark:bg-[#121212] px-6 py-3 text-base font-semibold text-content-100 dark:text-white shadow-sm hover:bg-base-300 dark:hover:bg-[#2C2C2E] transition-all border border-base-300 dark:border-[#2C2C2E]"
                     >
-                        <ArrowUpTrayIcon className="h-5 w-5" />
+                        <ArrowDownTrayIcon className="h-5 w-5" />
                         Import (.db)
                     </button>
                 </div>

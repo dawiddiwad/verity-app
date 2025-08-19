@@ -1,7 +1,5 @@
-
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { LoaderIcon, SparklesIcon, ArrowDownTrayIcon, DocumentTextIcon, XMarkIcon, PhotoIcon, BriefcaseIcon, TrashIcon, ChevronDownIcon, CheckIcon } from './Icons';
+import { LoaderIcon, SparklesIcon, ArrowDownTrayIcon, DocumentTextIcon, XMarkIcon, PhotoIcon, BriefcaseIcon, TrashIcon, ChevronDownIcon, CheckIcon, PencilIcon } from './Icons';
 import { ResumeData, Job } from '../types';
 import { parseJobDescriptionFromUrl } from '../services/geminiService';
 
@@ -11,11 +9,16 @@ interface ResumeInputFormProps {
   selectedJobId: number | null;
   onJobSelectionChange: (selection: 'new' | number) => void;
   isCreatingJob: boolean;
+  isJobEditing: boolean;
+  setIsJobEditing: (isEditing: boolean) => void;
+  hasJobChanged: boolean;
   jobTitle: string;
   jobDescription: string;
   setJobTitle: (title: string) => void;
   setJobDescription: (description: string) => void;
-  onSaveNewJob: (title: string, description: string) => Promise<Job>;
+  onSaveNewJob: (title: string, description: string) => Promise<Job | null>;
+  onUpdateJob: (id: number, title: string, description: string) => Promise<void>;
+  onCancelEdit: () => void;
   onDeleteJob: (id: number) => void;
   resumeFiles: ResumeData[];
   setResumeFiles: (data: ResumeData[]) => void;
@@ -34,11 +37,16 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
   selectedJobId,
   onJobSelectionChange,
   isCreatingJob,
+  isJobEditing,
+  setIsJobEditing,
+  hasJobChanged,
   jobTitle,
   jobDescription,
   setJobTitle,
   setJobDescription,
   onSaveNewJob,
+  onUpdateJob,
+  onCancelEdit,
   onDeleteJob,
   resumeFiles,
   setResumeFiles,
@@ -58,14 +66,17 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
   const [jobUrl, setJobUrl] = useState('');
   const [isParsingUrl, setIsParsingUrl] = useState(false);
   const [isUrlParsingPending, setIsUrlParsingPending] = useState(false);
+  const [isJobDropdownOpen, setIsJobDropdownOpen] = useState(false);
+  const jobDropdownRef = useRef<HTMLDivElement>(null);
 
 
   const isJobSelected = !!selectedJobId && !isCreatingJob;
+  const isJobEditable = isCreatingJob || isJobEditing;
   const hasResumes = resumeFiles.length > 0;
-  const currentStep = isJobSelected ? (hasResumes ? 3 : 2) : 1;
+  const currentStep = (isJobSelected || isCreatingJob) ? (hasResumes ? 3 : 2) : 1;
   
   const steps = [
-      { id: 1, name: 'Select Job' },
+      { id: 1, name: 'Select or Create Job' },
       { id: 2, name: 'Upload Resumes' },
       { id: 3, name: 'Analyze Resumes' },
   ];
@@ -85,16 +96,16 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
       overlayTitle = 'Analyzing Resumes...';
       overlayMessage = analysisProgress || 'This may take a few moments.';
   }
-
-
-  const handleJobSelectionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    if (value === 'new') {
-      onJobSelectionChange('new');
-    } else {
-      onJobSelectionChange(Number(value));
-    }
-  };
+  
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (jobDropdownRef.current && !jobDropdownRef.current.contains(event.target as Node)) {
+        setIsJobDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleSaveJob = async () => {
     if (!jobTitle.trim() || !jobDescription.trim()) {
@@ -107,6 +118,22 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
         await onSaveNewJob(jobTitle, jobDescription);
     } catch (e) {
         setError(e instanceof Error ? e.message : "Failed to save job.");
+    } finally {
+        setIsSavingJob(false);
+    }
+  };
+
+  const handleUpdateJob = async () => {
+    if (!selectedJobId || !jobTitle.trim() || !jobDescription.trim()) {
+        setError("Job title and description cannot be empty.");
+        return;
+    }
+    setIsSavingJob(true);
+    setError(null);
+    try {
+        await onUpdateJob(selectedJobId, jobTitle, jobDescription);
+    } catch (e) {
+        setError(e instanceof Error ? e.message : "Failed to update job.");
     } finally {
         setIsSavingJob(false);
     }
@@ -299,7 +326,7 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
     setResumeFiles(resumeFiles.filter(f => f.fileName !== fileName));
   };
 
-  const isAnalyzeButtonDisabled = anyLoading || resumeFiles.length === 0 || !selectedJobId;
+  const isAnalyzeButtonDisabled = anyLoading || resumeFiles.length === 0 || !selectedJobId || isJobEditing;
   const buttonText = `Analyze ${resumeFiles.length > 1 ? `${resumeFiles.length} Resumes` : 'Resume'}`;
 
   return (
@@ -346,43 +373,104 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
         {/* Left Column: Job Management */}
         <div className="flex flex-col space-y-6">
             <div className="space-y-3">
-                <label htmlFor="job-selection" className="block text-sm font-medium text-content-200 dark:text-[#8D8D92]">
-                  <span className="font-bold text-content-100 dark:text-white">Step 1:</span> Select Job
-                </label>
-                <div className="flex items-center gap-2">
-                    <div className="relative w-full">
-                        <select
-                            id="job-selection"
-                            value={isCreatingJob ? 'new' : selectedJobId ?? ''}
-                            onChange={handleJobSelectionChange}
-                            disabled={anyLoading}
-                            className="appearance-none block w-full rounded-lg border border-base-300 dark:border-[#2C2C2E] bg-base-100 dark:bg-[#121212] py-2.5 pl-4 pr-10 text-content-100 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm transition-all"
-                        >
-                            <option value="" disabled>-- Select a Job --</option>
-                            {jobs.map(job => (
-                                <option key={job.id} value={job.id}>{job.title}</option>
-                            ))}
-                            <option value="new" className="font-semibold text-brand-primary">[+] Create a New Job</option>
-                        </select>
-                        <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-content-200 dark:text-[#8D8D92]">
-                            <ChevronDownIcon className="h-5 w-5" aria-hidden="true" />
+                 <div className="flex justify-between items-center">
+                    <label htmlFor="job-title-control" className="block text-sm font-medium text-content-200 dark:text-[#8D8D92]">
+                        <span className="font-bold text-content-100 dark:text-white">Step 1:</span> {isJobEditable ? 'Enter Job Title' : 'Select or Create Job'}
+                    </label>
+                    {!isCreatingJob && selectedJobId && !isJobEditing && (
+                        <div className="flex items-center gap-1 sm:gap-2">
+                            <button 
+                                type="button" 
+                                onClick={() => setIsJobEditing(true)}
+                                disabled={anyLoading}
+                                className="p-1.5 rounded-full text-content-200 dark:text-[#8D8D92] hover:text-brand-primary hover:bg-base-300 dark:hover:bg-[#2C2C2E] transition-colors disabled:opacity-50"
+                                title="Edit selected job"
+                            >
+                                <PencilIcon className="h-5 w-5"/>
+                            </button>
+                             <button 
+                                type="button" 
+                                onClick={() => onDeleteJob(selectedJobId)}
+                                disabled={anyLoading}
+                                className="p-1.5 rounded-full text-content-200 dark:text-[#8D8D92] hover:text-danger-text hover:bg-danger-bg/80 transition-colors disabled:opacity-50"
+                                title="Delete selected job"
+                            >
+                                <TrashIcon className="h-5 w-5"/>
+                            </button>
                         </div>
-                    </div>
-                    {!isCreatingJob && selectedJobId && (
-                        <button 
-                            type="button" 
-                            onClick={() => onDeleteJob(selectedJobId)}
+                    )}
+                </div>
+                 <div className="relative" ref={jobDropdownRef}>
+                    {isJobEditable ? (
+                        <div className="relative w-full">
+                            <input
+                                type="text"
+                                id="job-title-control"
+                                value={jobTitle}
+                                onChange={(e) => setJobTitle(e.target.value)}
+                                disabled={anyLoading}
+                                placeholder="Job Title (e.g. Senior Frontend Engineer)"
+                                className="block w-full rounded-lg border border-base-300 dark:border-[#2C2C2E] bg-base-100 dark:bg-[#121212] py-2.5 pl-4 pr-10 text-content-100 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm"
+                                autoFocus
+                            />
+                             <button
+                                type="button"
+                                onClick={() => setIsJobDropdownOpen(!isJobDropdownOpen)}
+                                disabled={anyLoading}
+                                className="absolute inset-y-0 right-0 flex items-center pr-3 pl-3 text-content-200 dark:text-[#8D8D92] hover:text-content-100 dark:hover:text-white"
+                                title="Select a job"
+                            >
+                                <ChevronDownIcon className={`h-5 w-5 transition-transform duration-200 ${isJobDropdownOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            type="button"
+                            id="job-title-control"
+                            onClick={() => setIsJobDropdownOpen(!isJobDropdownOpen)}
                             disabled={anyLoading}
-                            className="p-2 text-content-200 dark:text-[#8D8D92] hover:text-danger-text hover:bg-danger-bg rounded-full transition-colors disabled:opacity-50"
-                            title="Delete selected job"
+                            className="flex items-center justify-between w-full rounded-lg border border-base-300 dark:border-[#2C2C2E] bg-base-100 dark:bg-[#121212] py-2.5 px-4 text-content-100 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm transition-all text-left"
                         >
-                            <TrashIcon className="h-5 w-5"/>
+                            <span className="truncate pr-2">
+                                {jobTitle || '-- Select a Job --'}
+                            </span>
+                            <ChevronDownIcon className={`h-5 w-5 text-content-200 dark:text-[#8D8D92] transition-transform duration-200 shrink-0 ${isJobDropdownOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                         </button>
+                    )}
+                    {isJobDropdownOpen && (
+                        <div className="absolute z-20 mt-1 w-full rounded-md bg-base-200 dark:bg-[#1C1C1E] shadow-lg ring-1 ring-black/5 dark:ring-white/10 focus:outline-none animate-fade-in" style={{ animationDuration: '0.1s'}}>
+                            <ul className="max-h-60 overflow-y-auto py-1">
+                                {jobs.map(job => (
+                                    <li key={job.id}>
+                                        <button
+                                            onClick={() => {
+                                                onJobSelectionChange(job.id);
+                                                setIsJobDropdownOpen(false);
+                                            }}
+                                            className={`flex items-center w-full px-4 py-2 text-sm text-left truncate ${selectedJobId === job.id ? 'font-semibold text-brand-primary' : 'text-content-100 dark:text-white'} hover:bg-base-300 dark:hover:bg-[#2C2C2E]`}
+                                        >
+                                            {job.title}
+                                        </button>
+                                    </li>
+                                ))}
+                                <li>
+                                    <button
+                                        onClick={() => {
+                                            onJobSelectionChange('new');
+                                            setIsJobDropdownOpen(false);
+                                        }}
+                                        className={`w-full px-4 py-2 text-sm text-left font-semibold text-content-100 dark:text-white hover:bg-base-300 dark:hover:bg-[#2C2C2E]`}
+                                    >
+                                        [+] Create a New Job
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
                     )}
                 </div>
             </div>
 
-            {isCreatingJob && (
+            {isJobEditable && (
                 <div className="space-y-2">
                     <label htmlFor="job-url" className="text-xs font-medium text-content-200 dark:text-[#8D8D92]">Load from URL</label>
                     <div className="flex items-center gap-2">
@@ -409,34 +497,21 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
             )}
 
             <div className="flex flex-col flex-1 space-y-6">
-                 {isCreatingJob && (
+                 {isJobEditable && (
                     <p className="text-xs font-medium text-content-200 dark:text-[#8D8D92] -mb-4">
                         or fill details manually
                     </p>
                 )}
-                {isCreatingJob && (
-                    <div>
-                    <input
-                        type="text"
-                        id="job-title"
-                        value={jobTitle}
-                        onChange={(e) => setJobTitle(e.target.value)}
-                        disabled={anyLoading}
-                        placeholder="Job Title (e.g. Senior Frontend Engineer)"
-                        className="block w-full rounded-lg border border-base-300 dark:border-[#2C2C2E] bg-base-100 dark:bg-[#121212] py-2.5 px-4 text-content-100 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm"
-                    />
-                    </div>
-                )}
                 <div className="flex flex-col flex-grow">
                   <textarea
                     id="job-description"
-                    rows={isCreatingJob ? 8 : 12}
-                    className="block w-full flex-grow rounded-lg border border-base-300 dark:border-[#2C2C2E] bg-base-100 dark:bg-[#121212] py-2.5 px-4 text-content-100 dark:text-white placeholder:text-content-200/70 dark:placeholder:text-[#8D8D92]/70 read-only:bg-base-200 dark:read-only:bg-[#1C1C1E] read-only:text-content-200/70 dark:read-only:text-[#8D8D92]/70 focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm"
-                    placeholder={isCreatingJob ? "Paste the job description you are targeting..." : "Select a job to see its description."}
+                    rows={isCreatingJob || isJobEditing ? 10 : 14}
+                    className="block w-full flex-grow rounded-lg border border-base-300 dark:border-[#2C2C2E] bg-base-100 dark:bg-[#121212] py-2.5 px-4 text-content-100 dark:text-white placeholder:text-content-200/70 dark:placeholder:text-[#8D8D92]/70 read-only:bg-base-200 dark:read-only:bg-[#1C1C1E] read-only:text-content-200/70 dark:read-only:text-[#8D8D92]/70 read-only:cursor-default focus:outline-none focus:ring-2 focus:ring-brand-primary sm:text-sm"
+                    placeholder={(isCreatingJob || isJobSelected) ? "Paste the job description you are targeting..." : "Select a job to see its description."}
                     value={jobDescription}
                     onChange={(e) => setJobDescription(e.target.value)}
-                    readOnly={!isCreatingJob}
                     disabled={anyLoading}
+                    readOnly={!isJobEditable}
                   />
                 </div>
                 {isCreatingJob && (
@@ -446,8 +521,28 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
                         disabled={anyLoading || !jobTitle.trim() || !jobDescription.trim()}
                         className="w-full flex justify-center items-center rounded-lg bg-base-300 dark:bg-[#2C2C2E] px-4 py-2.5 text-sm font-semibold text-content-100 dark:text-white shadow-sm hover:bg-base-200 dark:hover:bg-[#1C1C1E] disabled:opacity-50 transition-colors"
                     >
-                        {isSavingJob ? <><LoaderIcon className="animate-spin -ml-1 mr-3 h-5 w-5" />Saving Job...</> : 'Save Job'}
+                        {isSavingJob ? <><LoaderIcon className="animate-spin -ml-1 mr-3 h-5 w-5" />Saving...</> : 'Save Job'}
                     </button>
+                )}
+                {isJobEditing && (
+                    <div className="flex items-center gap-2">
+                         <button
+                            type="button"
+                            onClick={onCancelEdit}
+                            disabled={anyLoading}
+                            className="w-full flex justify-center items-center rounded-lg bg-base-100 dark:bg-[#121212] px-4 py-2.5 text-sm font-semibold text-content-100 dark:text-white shadow-sm hover:bg-base-300 dark:hover:bg-[#2C2C2E] disabled:opacity-50 transition-colors border border-base-300 dark:border-[#2C2C2E]"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleUpdateJob}
+                            disabled={anyLoading || !jobTitle.trim() || !jobDescription.trim() || !hasJobChanged}
+                            className="w-full flex justify-center items-center rounded-lg bg-base-300 dark:bg-[#2C2C2E] px-4 py-2.5 text-sm font-semibold text-content-100 dark:text-white shadow-sm hover:bg-base-200 dark:hover:bg-[#1C1C1E] disabled:opacity-50 transition-colors"
+                        >
+                            {isSavingJob ? <><LoaderIcon className="animate-spin -ml-1 mr-3 h-5 w-5" />Saving...</> : 'Save Changes'}
+                        </button>
+                    </div>
                 )}
             </div>
         </div>
@@ -458,18 +553,18 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
             <span className="font-bold text-content-100 dark:text-white">Step 2:</span> Upload Resumes
           </label>
            <div className="flex-grow flex flex-col" onDragOver={handleDragOver} onDragLeave={handleDragLeave} onDrop={handleDrop}>
-            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.docx,.png,.jpg,.jpeg,.txt,.md" disabled={anyLoading || isCreatingJob} multiple />
+            <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" accept=".pdf,.docx,.png,.jpg,.jpeg,.txt,.md" disabled={anyLoading || isCreatingJob || isJobEditing} multiple />
             {resumeFiles.length === 0 ? (
               <div
-                onClick={() => !anyLoading && !isCreatingJob && fileInputRef.current?.click()}
+                onClick={() => !anyLoading && !isCreatingJob && !isJobEditing && fileInputRef.current?.click()}
                 className={`relative flex flex-col flex-grow justify-center items-center w-full rounded-lg border border-dashed border-base-300 dark:border-[#2C2C2E] px-6 text-center transition-colors h-full min-h-[300px] ${
                   isDragging ? 'bg-brand-primary/10 border-brand-primary' : 'bg-base-100 dark:bg-[#121212] hover:border-content-200 dark:hover:border-[#8D8D92]'
-                } ${(isCreatingJob || anyLoading) ? 'cursor-not-allowed bg-base-100/50 dark:bg-[#121212]/50' : 'cursor-pointer'}`}
+                } ${(isCreatingJob || anyLoading || isJobEditing) ? 'cursor-not-allowed bg-base-100/50 dark:bg-[#121212]/50' : 'cursor-pointer'}`}
               >
                 <ArrowDownTrayIcon className="mx-auto h-10 w-10 text-content-200 dark:text-[#8D8D92]" />
                 <div className="mt-4 flex text-sm leading-6 text-content-200 dark:text-[#8D8D92]">
                     <p className="pl-1">
-                        { !isCreatingJob ? <>Drag & drop files or <span className="font-semibold text-brand-primary">browse</span></> : 'Please save the job first' }
+                        { isJobEditing ? 'Save or cancel changes to upload resumes' : !isCreatingJob && selectedJobId ? <>Drag & drop files or <span className="font-semibold text-brand-primary">browse</span></> : 'Please save or select a job first' }
                     </p>
                 </div>
                 <p className="text-xs leading-5 text-content-200/70 dark:text-[#8D8D92]/70 mt-1">PDF, DOCX, PNG, JPG, TXT, MD</p>
@@ -489,7 +584,7 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
                             </div>
                         ))}
                     </div>
-                     <button type="button" onClick={() => !anyLoading && !isCreatingJob && fileInputRef.current?.click()} disabled={anyLoading || isCreatingJob} className="mt-3 w-full flex justify-center items-center rounded-lg bg-base-200 dark:bg-[#1C1C1E] px-3 py-2 text-sm font-semibold text-content-100 dark:text-white shadow-sm hover:bg-base-300 dark:hover:bg-[#2C2C2E] disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                     <button type="button" onClick={() => !anyLoading && !isCreatingJob && !isJobEditing && fileInputRef.current?.click()} disabled={anyLoading || isCreatingJob || isJobEditing} className="mt-3 w-full flex justify-center items-center rounded-lg bg-base-200 dark:bg-[#1C1C1E] px-3 py-2 text-sm font-semibold text-content-100 dark:text-white shadow-sm hover:bg-base-300 dark:hover:bg-[#2C2C2E] disabled:opacity-50 disabled:cursor-not-allowed transition-all">
                         Add More Files
                     </button>
                 </div>
