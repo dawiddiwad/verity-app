@@ -1,4 +1,5 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import * as htmlToImage from 'html-to-image';
 import { StoredAnalysis, ResumeData, AnalysisResultWithError, Job } from './types';
 import { analyzeResume } from './services/geminiService';
 import * as dbService from './services/dbService';
@@ -10,7 +11,7 @@ import WarningMessage from './components/WarningMessage';
 import AnalysisSummaryTable from './components/AnalysisSummaryTable';
 import DatabaseSetup from './components/DatabaseSetup';
 import ApiKeyModal from './components/ApiKeyModal';
-import { LoaderIcon } from './components/Icons';
+import { LoaderIcon, CameraIcon } from './components/Icons';
 
 type DbState = 'uninitialized' | 'initializing' | 'needs-choice' | 'ready';
 export type Theme = 'light' | 'dark' | 'system';
@@ -43,6 +44,8 @@ const App: React.FC = () => {
   const [isReanalysisPending, setIsReanalysisPending] = useState(false);
   
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'dark');
+  const [isCapturing, setIsCapturing] = useState(false);
+  const captureRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -431,6 +434,47 @@ useEffect(() => {
     }
 }, [isReanalysisPending, apiKey, handleReanalyzeAll]);
 
+  const handleCapture = useCallback(async () => {
+    const elementToCapture = captureRef.current;
+
+    if (!elementToCapture) {
+      setError("Could not find the element to capture. Please try again.");
+      return;
+    }
+    
+    if (!selectedResult || 'error' in selectedResult.analysis) return;
+
+    setIsCapturing(true);
+    setError(null);
+
+    try {
+        const isDarkMode = document.documentElement.classList.contains('dark');
+        const bgColor = isDarkMode ? '#121212' : '#F2F2F7';
+
+        const dataUrl = await htmlToImage.toPng(elementToCapture, {
+            backgroundColor: bgColor,
+            pixelRatio: 2, // Increase resolution for better quality
+        });
+
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        
+        const sanitizeFilename = (name: string) => name.replace(/[\\s/\\?%*:|"<>]/g, '_').toLowerCase();
+        const candidateName = sanitizeFilename('candidateName' in selectedResult.analysis ? selectedResult.analysis.candidateName : selectedResult.fileName);
+        const jobTitle = sanitizeFilename(selectedResult.jobTitle);
+
+        link.download = `Verity_Analysis_${candidateName}_for_${jobTitle}.png`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    } catch (err) {
+        console.error("Failed to capture screenshot:", err);
+        setError("Could not capture the analysis details as an image. Some content, like PDF previews, may not be capturable.");
+    } finally {
+        setIsCapturing(false);
+    }
+  }, [selectedResult]);
+
 
   const filteredAnalysisResults = useMemo(() => {
     if (!selectedJobId) return [];
@@ -519,16 +563,38 @@ useEffect(() => {
             
           {selectedResult ? (
             <div className="animate-fade-in">
-              <button
-                onClick={() => setSelectedResult(null)}
-                className="mb-6 inline-flex items-center gap-2 rounded-full bg-base-200 dark:bg-[#1C1C1E] px-4 py-2 text-sm font-semibold text-content-100 dark:text-white shadow-sm hover:bg-base-300 dark:hover:bg-[#2C2C2E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary transition-all"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
-                  <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
-                </svg>
-                Back to Summary
-              </button>
-              <AnalysisDisplay result={selectedResult} />
+              <div className="mb-6 flex items-center justify-between">
+                <button
+                  onClick={() => setSelectedResult(null)}
+                  className="inline-flex items-center gap-2 rounded-full bg-base-200 dark:bg-[#1C1C1E] px-4 py-2 text-sm font-semibold text-content-100 dark:text-white shadow-sm hover:bg-base-300 dark:hover:bg-[#2C2C2E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary transition-all"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+                    <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                  </svg>
+                  Back to Summary
+                </button>
+                <button
+                  onClick={handleCapture}
+                  disabled={isCapturing}
+                  className="inline-flex items-center gap-2 rounded-full bg-base-200 dark:bg-[#1C1C1E] px-4 py-2 text-sm font-semibold text-content-100 dark:text-white shadow-sm hover:bg-base-300 dark:hover:bg-[#2C2C2E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary transition-all disabled:opacity-50"
+                  title="Capture analysis as PNG"
+                >
+                  {isCapturing ? (
+                    <>
+                      <LoaderIcon className="w-5 h-5 animate-spin"/>
+                      <span>Capturing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CameraIcon className="w-5 h-5" />
+                      <span>Capture</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              <div ref={captureRef} className="bg-base-100 dark:bg-[#121212] p-6">
+                <AnalysisDisplay result={selectedResult} />
+              </div>
             </div>
           ) : (
             <AnalysisSummaryTable 
