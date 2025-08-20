@@ -352,10 +352,16 @@ const App: React.FC = () => {
           setError(`Another job with the title "${newTitle}" already exists.`);
           return;
       }
+      
+      const analysesExistForJob = analysisResults.some(r => r.jobId === id);
+
       await dbService.updateJob(id, newTitle, newDescription);
       await loadAllData();
       setIsJobEditing(false);
-      setWarning("Job details updated. For best results, consider re-analyzing existing resumes against the new description.");
+
+      if (analysesExistForJob) {
+        setWarning("Job details updated. For best results, consider re-analyzing existing resumes against the new description.");
+      }
   };
 
   const handleCancelEdit = () => {
@@ -605,10 +611,12 @@ const App: React.FC = () => {
             apiKey={apiKey}
             isApiKeyModalOpen={isApiKeyModalOpen}
             onRequestApiKey={() => setIsApiKeyModalOpen(true)}
+            hasAnalysesForJob={filteredAnalysisResults.length > 0}
+            warning={warning}
           />
           
           {error && !anyLoading && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
-          {warning && !anyLoading && <WarningMessage message={warning} />}
+          {warning && !anyLoading && <WarningMessage message={warning} onDismiss={() => setWarning(null)} />}
           
           {isImporting && (
              <div className="text-center p-8 bg-base-200 dark:bg-[#1C1C1E] rounded-2xl animate-fade-in border border-base-300 dark:border-[#2C2C2E]">

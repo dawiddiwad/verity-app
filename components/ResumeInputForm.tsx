@@ -30,6 +30,8 @@ interface ResumeInputFormProps {
   apiKey: string | null;
   isApiKeyModalOpen: boolean;
   onRequestApiKey: () => void;
+  hasAnalysesForJob: boolean;
+  warning: string | null;
 }
 
 const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
@@ -58,6 +60,8 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
   apiKey,
   isApiKeyModalOpen,
   onRequestApiKey,
+  hasAnalysesForJob,
+  warning,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
@@ -69,11 +73,32 @@ const ResumeInputForm: React.FC<ResumeInputFormProps> = ({
   const [isJobDropdownOpen, setIsJobDropdownOpen] = useState(false);
   const jobDropdownRef = useRef<HTMLDivElement>(null);
 
-
-  const isJobSelected = !!selectedJobId && !isCreatingJob;
   const isJobEditable = isCreatingJob || isJobEditing;
+  const isJobSelected = !!selectedJobId && !isCreatingJob;
   const hasResumes = resumeFiles.length > 0;
-  const currentStep = (isJobSelected || isCreatingJob) ? (hasResumes ? 3 : 2) : 1;
+  
+  const showReanalyzeWarning = warning && warning.includes("re-analyzing");
+
+  let currentStep: number;
+  if (showReanalyzeWarning && !isJobEditing && hasAnalysesForJob) {
+    currentStep = 3;
+  } else if (isCreatingJob || isJobEditing) {
+    currentStep = 1;
+  } else if (isJobSelected) {
+    if (hasResumes) {
+      currentStep = 3; // Job selected, resumes are present, ready to analyze.
+    } else {
+      // No resumes uploaded.
+      if (hasAnalysesForJob) {
+        currentStep = 4; // Job has history, and no new resumes are staged. All done.
+      } else {
+        currentStep = 2; // Job is selected, no history, ready for resumes.
+      }
+    }
+  } else {
+    // Initial state: no job selected, not creating one.
+    currentStep = 1;
+  }
   
   const steps = [
       { id: 1, name: 'Select or Create Job' },
