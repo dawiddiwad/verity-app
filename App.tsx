@@ -11,10 +11,20 @@ import WarningMessage from './components/WarningMessage';
 import AnalysisSummaryTable from './components/AnalysisSummaryTable';
 import DatabaseSetup from './components/DatabaseSetup';
 import ApiKeyModal from './components/ApiKeyModal';
+import ConfirmationModal from './components/ConfirmationModal';
 import { LoaderIcon, CameraIcon } from './components/Icons';
 
 type DbState = 'uninitialized' | 'initializing' | 'needs-choice' | 'ready';
 export type Theme = 'light' | 'dark' | 'system';
+
+interface ConfirmationState {
+  isOpen: boolean;
+  title: string;
+  message: React.ReactNode;
+  onConfirm: () => void;
+  confirmText?: string;
+  confirmVariant?: 'danger' | 'primary' | 'default';
+}
 
 const App: React.FC = () => {
   const [resumeFiles, setResumeFiles] = useState<ResumeData[]>([]);
@@ -42,6 +52,13 @@ const App: React.FC = () => {
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
   const [isAnalysisPending, setIsAnalysisPending] = useState(false);
   const [isReanalysisPending, setIsReanalysisPending] = useState(false);
+
+  const [confirmationState, setConfirmationState] = useState<ConfirmationState>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
   
   const [theme, setTheme] = useState<Theme>(() => (localStorage.getItem('theme') as Theme) || 'dark');
   const [isCapturing, setIsCapturing] = useState(false);
@@ -223,6 +240,9 @@ const App: React.FC = () => {
   
   const handleSaveApiKey = (newApiKey: string) => {
     setApiKey(newApiKey);
+    if (error && error.toLowerCase().includes('api key')) {
+      setError(null);
+    }
   };
 
   const handleSetResumes = (files: ResumeData[]) => {
@@ -233,28 +253,43 @@ const App: React.FC = () => {
     setSelectedResult(result);
   };
 
-  const handleDeleteResult = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this analysis?')) {
-      try {
-        await dbService.deleteAnalysis(id);
-        await loadAllData();
-      } catch (err) {
-        setError('Failed to delete the analysis result.');
-      }
-    }
+  const handleDeleteResult = (id: number) => {
+    setConfirmationState({
+      isOpen: true,
+      title: 'Delete Analysis',
+      message: <p>Are you sure you want to permanently delete this analysis? This action cannot be undone.</p>,
+      onConfirm: async () => {
+        try {
+          await dbService.deleteAnalysis(id);
+          await loadAllData();
+        } catch (err) {
+          setError('Failed to delete the analysis result.');
+        }
+      },
+      confirmText: 'Delete',
+      confirmVariant: 'danger',
+    });
   };
   
-  const handleDeleteAllResultsForJob = async () => {
+  const handleDeleteAllResultsForJob = () => {
     if (!selectedJobId) return;
-    if (window.confirm(`Are you sure you want to delete ALL analysis results for "${jobTitle}"? This action cannot be undone.`)) {
-      try {
-        await dbService.clearAllAnalyses(selectedJobId);
-        await loadAllData();
-        setSelectedResult(null);
-      } catch (err) {
-        setError('Failed to clear analysis results for this job.');
-      }
-    }
+    setConfirmationState({
+        isOpen: true,
+        title: 'Clear Job History',
+        message: <p>Are you sure you want to delete <strong>ALL</strong> analysis results for "{jobTitle}"? This action cannot be undone.</p>,
+        onConfirm: async () => {
+            if (!selectedJobId) return;
+            try {
+                await dbService.clearAllAnalyses(selectedJobId);
+                await loadAllData();
+                setSelectedResult(null);
+            } catch (err) {
+                setError('Failed to clear analysis results for this job.');
+            }
+        },
+        confirmText: 'Clear History',
+        confirmVariant: 'danger',
+    });
   };
 
   const handleExportDatabase = async () => {
@@ -332,14 +367,21 @@ const App: React.FC = () => {
     setError(null);
   };
 
-  const handleDeleteJob = async (jobId: number) => {
-      const jobToDelete = jobs.find(j => j.id === jobId);
-      if(!jobToDelete) return;
+  const handleDeleteJob = (jobId: number) => {
+    const jobToDelete = jobs.find(j => j.id === jobId);
+    if (!jobToDelete) return;
 
-      if (window.confirm(`Are you sure you want to permanently delete the job "${jobToDelete.title}" and all its associated analyses? This cannot be undone.`)) {
-          await dbService.deleteJobAndAnalyses(jobId);
-          await loadAllData();
-      }
+    setConfirmationState({
+        isOpen: true,
+        title: 'Delete Job',
+        message: <p>Are you sure you want to permanently delete the job "<strong>{jobToDelete.title}</strong>" and all its associated analyses? This cannot be undone.</p>,
+        onConfirm: async () => {
+            await dbService.deleteJobAndAnalyses(jobId);
+            await loadAllData();
+        },
+        confirmText: 'Delete Job',
+        confirmVariant: 'danger',
+    });
   };
 
   const handleJobSelection = (selection: 'new' | number) => {
@@ -355,28 +397,10 @@ const App: React.FC = () => {
     }
   };
 
-  const handleReanalyzeAll = useCallback(async () => {
-    if (!selectedJob || analysisResults.filter(r => r.jobId === selectedJobId && !('error' in r.analysis)).length === 0) {
-      setError('Cannot re-analyze. Ensure a job with successful analyses is selected.');
-      return;
-    }
-
-    if (!apiKey) {
-      setError('Please set your API key to re-analyze.');
-      setIsReanalysisPending(true);
-      setIsApiKeyModalOpen(true);
-      return;
-    }
+  const performReanalysis = useCallback(async () => {
+    if (!selectedJob) return;
     
     const resultsToReanalyze = analysisResults.filter(r => r.jobId === selectedJobId && !('error' in r.analysis));
-    if (resultsToReanalyze.length === 0) {
-        setWarning("No successful analyses to re-run for this job.");
-        return;
-    }
-
-    if (!window.confirm(`Are you sure you want to re-analyze all ${resultsToReanalyze.length} resumes for "${selectedJob.title}"? This will use your API credits and replace the existing analysis data.`)) {
-        return;
-    }
 
     setIsLoading(true);
     setError(null);
@@ -392,7 +416,7 @@ const App: React.FC = () => {
             
             let newAnalysis: AnalysisResultWithError;
             try {
-                newAnalysis = await analyzeResume(result.resumeData, selectedJob.description, apiKey);
+                newAnalysis = await analyzeResume(result.resumeData, selectedJob.description, apiKey!);
             } catch(e) {
                 const message = e instanceof Error ? e.message : 'Unknown analysis error';
                 if (message.toLowerCase().includes('api key not valid')) {
@@ -416,23 +440,43 @@ const App: React.FC = () => {
       setIsLoading(false);
       setAnalysisProgress(null);
     }
-}, [selectedJobId, jobs, analysisResults, loadAllData, apiKey, selectedJob]);
+  }, [selectedJobId, jobs, analysisResults, loadAllData, apiKey, selectedJob]);
 
-const triggerReanalysis = () => {
+  const triggerReanalysis = useCallback(() => {
+    if (!selectedJob || analysisResults.filter(r => r.jobId === selectedJobId && !('error' in r.analysis)).length === 0) {
+      setError('Cannot re-analyze. Ensure a job with successful analyses is selected.');
+      return;
+    }
+
     if (!apiKey) {
+      setError('Please set your API key to re-analyze.');
       setIsReanalysisPending(true);
       setIsApiKeyModalOpen(true);
-    } else {
-      handleReanalyzeAll();
+      return;
     }
-};
+    
+    const resultsToReanalyze = analysisResults.filter(r => r.jobId === selectedJobId && !('error' in r.analysis));
+    if (resultsToReanalyze.length === 0) {
+        setWarning("No successful analyses to re-run for this job.");
+        return;
+    }
 
-useEffect(() => {
-    if (isReanalysisPending && apiKey) {
-        setIsReanalysisPending(false);
-        handleReanalyzeAll();
-    }
-}, [isReanalysisPending, apiKey, handleReanalyzeAll]);
+    setConfirmationState({
+        isOpen: true,
+        title: 'Re-analyze All Resumes',
+        message: <p>Are you sure you want to re-analyze all <strong>{resultsToReanalyze.length}</strong> resumes for "<strong>{selectedJob.title}</strong>"? This will use your API credits and replace the existing analysis data.</p>,
+        onConfirm: performReanalysis,
+        confirmText: `Re-analyze (${resultsToReanalyze.length})`,
+        confirmVariant: 'primary'
+    });
+  }, [selectedJob, analysisResults, apiKey, performReanalysis, selectedJobId]);
+
+  useEffect(() => {
+      if (isReanalysisPending && apiKey) {
+          setIsReanalysisPending(false);
+          triggerReanalysis();
+      }
+  }, [isReanalysisPending, apiKey, triggerReanalysis]);
 
   const handleCapture = useCallback(async () => {
     const elementToCapture = captureRef.current;
@@ -511,6 +555,19 @@ useEffect(() => {
         }}
         onSave={handleSaveApiKey}
       />
+      <ConfirmationModal
+        isOpen={confirmationState.isOpen}
+        onClose={() => setConfirmationState({ ...confirmationState, isOpen: false })}
+        onConfirm={() => {
+            confirmationState.onConfirm();
+            setConfirmationState({ ...confirmationState, isOpen: false });
+        }}
+        title={confirmationState.title}
+        confirmText={confirmationState.confirmText}
+        confirmVariant={confirmationState.confirmVariant}
+      >
+        {confirmationState.message}
+      </ConfirmationModal>
       <Header 
         onImport={handleImportDatabase}
         onExport={handleExportDatabase}
@@ -550,7 +607,7 @@ useEffect(() => {
             onRequestApiKey={() => setIsApiKeyModalOpen(true)}
           />
           
-          {error && !anyLoading && <ErrorMessage message={error} />}
+          {error && !anyLoading && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
           {warning && !anyLoading && <WarningMessage message={warning} />}
           
           {isImporting && (
@@ -573,24 +630,26 @@ useEffect(() => {
                   </svg>
                   Back to Summary
                 </button>
-                <button
-                  onClick={handleCapture}
-                  disabled={isCapturing}
-                  className="inline-flex items-center gap-2 rounded-full bg-base-200 dark:bg-[#1C1C1E] px-4 py-2 text-sm font-semibold text-content-100 dark:text-white shadow-sm hover:bg-base-300 dark:hover:bg-[#2C2C2E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary transition-all disabled:opacity-50"
-                  title="Capture analysis as PNG"
-                >
-                  {isCapturing ? (
-                    <>
-                      <LoaderIcon className="w-5 h-5 animate-spin"/>
-                      <span>Capturing...</span>
-                    </>
-                  ) : (
-                    <>
-                      <CameraIcon className="w-5 h-5" />
-                      <span>Capture</span>
-                    </>
-                  )}
-                </button>
+                <div className="flex justify-between items-center">
+                  <button
+                    onClick={handleCapture}
+                    disabled={isCapturing}
+                    className="inline-flex items-center gap-2 rounded-full bg-base-200 dark:bg-[#1C1C1E] px-4 py-2 text-sm font-semibold text-content-100 dark:text-white shadow-sm hover:bg-base-300 dark:hover:bg-[#2C2C2E] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary transition-all disabled:opacity-50"
+                    title="Capture analysis as PNG"
+                  >
+                    {isCapturing ? (
+                      <>
+                        <LoaderIcon className="w-5 h-5 animate-spin"/>
+                        <span>Capturing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CameraIcon className="w-5 h-5" />
+                        <span>Capture</span>
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
               <div ref={captureRef} className="bg-base-100 dark:bg-[#121212] p-6">
                 <AnalysisDisplay result={selectedResult} />

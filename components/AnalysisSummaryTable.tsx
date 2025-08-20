@@ -181,7 +181,7 @@ const AnalysisSummaryTable: React.FC<AnalysisSummaryTableProps> = ({ results, jo
                           aria-label={`View details for ${result.fileName}`}
                           disabled={isLoading}
                         >
-                          Details &rarr;
+                          Details
                         </button>
                       )}
                       <button
